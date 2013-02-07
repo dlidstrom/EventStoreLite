@@ -5,24 +5,22 @@
 
     public class EventDispatcher
     {
-        private readonly IDictionary<Type, Action<IDomainEvent>> handlers
-            = new Dictionary<Type, Action<IDomainEvent>>();
+        private readonly Dictionary<Type, Action<IDomainEvent>> handlers
+            = new Dictionary<Type, Action<IDomainEvent>>(); 
 
-        public void Register<TEvent, TAggregate>(Action<TEvent> handler)
-            where TEvent : Event<TAggregate>
+        public void RegisterHandler<TEvent>(IEventHandler<TEvent> handler)
+            where TEvent : class, IDomainEvent
         {
-            // re-wrap delegate
             var type = typeof(TEvent);
-            this.handlers[type] = @event => handler(@event as TEvent);
+            this.handlers[type] = @event => handler.Handle(@event as TEvent);
         }
 
         public void Dispatch(IDomainEvent message)
         {
             var type = message.GetType();
-
             Action<IDomainEvent> handler;
             if (this.handlers.TryGetValue(type, out handler))
-                handler(message);
+                handler.Invoke(message);
         }
     }
 }

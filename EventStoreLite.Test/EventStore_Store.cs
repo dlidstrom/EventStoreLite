@@ -1,6 +1,8 @@
 ﻿namespace EventStoreLite.Test
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using NUnit.Framework;
     using Raven.Client.Embedded;
 
@@ -24,15 +26,40 @@
                     });
         }
 
+        private class CustomerInitializedHandler : IEventHandler<CustomerInitialized>,
+            IEventHandler<CustomerNameChanged>
+        {
+            public string AggregateId { get; set; }
+
+            public void Handle(CustomerInitialized e)
+            {
+                AggregateId = e.AggregateId;
+            }
+
+            public void Handle(CustomerNameChanged e)
+            {
+            }
+        }
+
+        private static IEnumerable<Type> TypesImplementingInterface(Type desiredType)
+        {
+            return AppDomain
+                .CurrentDomain
+                .GetAssemblies()
+                .SelectMany(assembly => assembly.GetTypes())
+                .Where(desiredType.IsAssignableFrom);
+
+        }
         [Test]
         public void PublishesEvents()
         {
             // Arrange
             var customer = new Customer("My name");
+            var handler = new CustomerInitializedHandler();
 
             var eventDispatcher = new EventDispatcher();
-            string id = null;
-            eventDispatcher.Register<CustomerInitialized, Customer>(x => id = x.AggregateId);
+            eventDispatcher.RegisterHandler<CustomerInitialized>(handler);
+            eventDispatcher.RegisterHandler<CustomerNameChanged>(handler);
 
             // Act
             WithEventStore(
@@ -44,7 +71,7 @@
                     });
 
             // Assert
-            Assert.That(id, Is.Not.Null);
+            Assert.That(handler.AggregateId, Is.Not.Null);
         }
 
         private static void WithEventStore(EventDispatcher dispatcher, Action<EventStore> action)
