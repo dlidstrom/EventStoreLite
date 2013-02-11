@@ -1,7 +1,7 @@
+using System;
+
 namespace EventStoreLite
 {
-    using System;
-
     public interface IDomainEvent
     {
         string AggregateId { get; set; }

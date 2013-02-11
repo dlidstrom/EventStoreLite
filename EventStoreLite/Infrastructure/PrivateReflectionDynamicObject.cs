@@ -1,14 +1,16 @@
-namespace EventStoreLite
-{
-    using System;
-    using System.Dynamic;
-    using System.Reflection;
+using System;
+using System.Diagnostics;
+using System.Dynamic;
+using System.Reflection;
 
+namespace EventStoreLite.Infrastructure
+{
     internal class PrivateReflectionDynamicObject : DynamicObject
     {
         private object RealObject { get; set; }
         private const BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
+        [DebuggerStepThrough]
         internal static object WrapObjectIfNeeded(object o)
         {
             // Don't wrap primitive types, which don't have many interesting internal APIs
@@ -19,6 +21,7 @@ namespace EventStoreLite
         }
 
         // Called when a method is called
+        [DebuggerStepThrough]
         public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
         {
             result = InvokeMemberOnType(this.RealObject.GetType(), this.RealObject, binder.Name, args);
@@ -29,6 +32,7 @@ namespace EventStoreLite
             return true;
         }
 
+        [DebuggerStepThrough]
         private static object InvokeMemberOnType(Type type, object target, string name, object[] args)
         {
             try

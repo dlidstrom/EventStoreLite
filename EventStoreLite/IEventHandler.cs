@@ -1,6 +1,10 @@
 ﻿namespace EventStoreLite
 {
-    public interface IEventHandler<in TEvent> where TEvent : IDomainEvent
+    public interface IEventHandler
+    {
+    }
+
+    public interface IEventHandler<in TEvent> : IEventHandler where TEvent : IDomainEvent
     {
         void Handle(TEvent e);
     }

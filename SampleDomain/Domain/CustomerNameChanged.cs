@@ -1,13 +1,17 @@
-namespace EventStoreLite.Test
-{
-    using System;
+using System;
+using EventStoreLite;
 
+namespace SampleDomain.Domain
+{
     public class CustomerNameChanged : Event<Customer>
     {
-        public CustomerNameChanged(string name)
+        public CustomerNameChanged(string oldName, string newName)
         {
-            this.NewName = name;
+            this.OldName = oldName;
+            this.NewName = newName;
         }
+
+        public string OldName { get; set; }
 
         public string NewName { get; set; }
 

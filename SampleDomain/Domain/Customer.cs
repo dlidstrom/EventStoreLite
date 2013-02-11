@@ -1,8 +1,9 @@
-namespace EventStoreLite.Test
-{
-    using System;
-    using System.IO;
+using System;
+using System.IO;
+using EventStoreLite;
 
+namespace SampleDomain.Domain
+{
     public class Customer : AggregateRoot<Customer>
     {
         private string name;
@@ -23,7 +24,7 @@ namespace EventStoreLite.Test
         public void ChangeName(string newName)
         {
             if (newName == null) throw new ArgumentNullException("newName");
-            this.ApplyChange(new CustomerNameChanged(newName));
+            this.ApplyChange(new CustomerNameChanged(name, newName));
         }
 
         public void PrintName(TextWriter writer)
@@ -42,7 +43,7 @@ namespace EventStoreLite.Test
 
         private void Apply(CustomerNameChanged e)
         {
-            this.previousName = this.name;
+            this.previousName = e.OldName;
             this.name = e.NewName;
             this.hasChangedName = true;
         }

@@ -1,3 +1,9 @@
+using System.Linq;
+using System.Reflection;
+using EventStoreLite.Indexes;
+using Raven.Abstractions.Data;
+using Raven.Client.Linq;
+
 namespace EventStoreLite
 {
     using System;
@@ -8,20 +14,31 @@ namespace EventStoreLite
     {
         private readonly ISet<IAggregate> unitOfWork
             = new HashSet<IAggregate>(ObjectReferenceEqualityComparer<object>.Default);
-        private readonly IDocumentSession session;
+
+        private readonly IDocumentStore documentStore;
+        private readonly IDocumentSession documentSession;
         private readonly EventDispatcher dispatcher;
 
-        public EventStore(IDocumentSession session, EventDispatcher dispatcher)
+        public EventStore(
+            IDocumentStore documentStore,
+            IDocumentSession documentSession,
+            EventDispatcher dispatcher,
+            Assembly assembly)
         {
-            if (session == null) throw new ArgumentNullException("session");
+            if (documentStore == null) throw new ArgumentNullException("documentStore");
+            if (documentSession == null) throw new ArgumentNullException("documentSession");
             if (dispatcher == null) throw new ArgumentNullException("dispatcher");
-            this.session = session;
+            if (assembly == null) throw new ArgumentNullException("assembly");
+            this.documentStore = documentStore;
+            this.documentSession = documentSession;
             this.dispatcher = dispatcher;
+            new ReadModelIndex(assembly).Execute(documentStore);
+            new WriteModelIndex().Execute(documentStore);
         }
 
         public TAggregate Load<TAggregate>(string id) where TAggregate : AggregateRoot<TAggregate>
         {
-            var instance = this.session.Load<TAggregate>(id);
+            var instance = this.documentSession.Load<TAggregate>(id);
             if (instance != null)
                 instance.LoadFromHistory();
             return instance;
@@ -30,12 +47,9 @@ namespace EventStoreLite
         public void Store<TAggregate>(AggregateRoot<TAggregate> aggregate) where TAggregate : class
         {
             this.unitOfWork.Add(aggregate);
-            this.session.Store(aggregate);
-        }
-
-        public void Dispose()
-        {
-            this.session.Dispose();
+            this.documentSession.Store(aggregate);
+            var metadata = this.documentSession.Advanced.GetMetadataFor(aggregate);
+            metadata.Add("AggregateRoot", true);
         }
 
         public void SaveChanges()
@@ -54,9 +68,38 @@ namespace EventStoreLite
                 aggregate.MarkChangesAsCommitted();
             }
 
-            this.session.SaveChanges();
-
+            this.documentSession.SaveChanges();
             this.unitOfWork.Clear();
+        }
+
+        public void RebuildReadModels()
+        {
+            this.documentStore.DatabaseCommands.DeleteByIndex("ReadModelIndex", new IndexQuery());
+
+            var current = 0;
+            while (true)
+            {
+                using (var session = documentStore.OpenSession())
+                {
+                    var q = session.Query<IAggregate, WriteModelIndex>();
+
+                    RavenQueryStatistics stats;
+                    var aggregates = q.Statistics(out stats).Skip(current).Take(11).ToList();
+                    if (aggregates.Count == 0) break;
+                    foreach (var e in aggregates.SelectMany(aggregate => aggregate.GetHistory()))
+                    {
+                        this.dispatcher.Dispatch(e);
+                    }
+
+                    session.SaveChanges();
+                    current += aggregates.Count;
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            this.documentSession.Dispose();
         }
     }
 }

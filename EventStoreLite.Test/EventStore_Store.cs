@@ -1,4 +1,9 @@
-﻿namespace EventStoreLite.Test
+﻿using System.Reflection;
+using Castle.MicroKernel.Registration;
+using Castle.Windsor;
+using SampleDomain.Domain;
+
+namespace EventStoreLite.Test
 {
     using System;
     using System.Collections.Generic;
@@ -10,7 +15,7 @@
     public class EventStore_Store
     {
         [Test]
-        public void CanStoreAggregate()
+        public void StoresAggregateInUnitOfWork()
         {
             // Arrange
             var customer = new Customer("Name of customer");
@@ -56,10 +61,9 @@
             // Arrange
             var customer = new Customer("My name");
             var handler = new CustomerInitializedHandler();
-
-            var eventDispatcher = new EventDispatcher();
-            eventDispatcher.RegisterHandler<CustomerInitialized>(handler);
-            eventDispatcher.RegisterHandler<CustomerNameChanged>(handler);
+            var container =
+                new WindsorContainer().Register(Component.For<IEventHandler<CustomerInitialized>>().Instance(handler));
+            var eventDispatcher = new EventDispatcher(container.Kernel);
 
             // Act
             WithEventStore(
@@ -77,7 +81,7 @@
         private static void WithEventStore(EventDispatcher dispatcher, Action<EventStore> action)
         {
             using (var documentStore = new EmbeddableDocumentStore { RunInMemory = true }.Initialize())
-            using (var session = new EventStore(documentStore.OpenSession(), dispatcher))
+            using (var session = new EventStore(documentStore, documentStore.OpenSession(), dispatcher, Assembly.GetExecutingAssembly()))
             {
                 action.Invoke(session);
             }
@@ -85,7 +89,7 @@
 
         private static void WithEventStore(Action<EventStore> action)
         {
-            WithEventStore(new EventDispatcher(), action);
+            WithEventStore(new EventDispatcher(new WindsorContainer().Kernel), action);
         }
     }
 }

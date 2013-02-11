@@ -1,3 +1,6 @@
+using System.Diagnostics;
+using EventStoreLite.Infrastructure;
+
 namespace EventStoreLite
 {
     using System;
@@ -5,7 +8,7 @@ namespace EventStoreLite
 
     public abstract class AggregateRoot<TAggregate> : IAggregate where TAggregate : class
     {
-        private readonly List<IDomainEvent> changes = new List<IDomainEvent>();
+        private readonly List<IDomainEvent> uncommittedChanges = new List<IDomainEvent>();
 
         protected AggregateRoot()
         {
@@ -22,13 +25,18 @@ namespace EventStoreLite
 
         public IEnumerable<IDomainEvent> GetUncommittedChanges()
         {
-            return this.changes.ToArray();
+            return this.uncommittedChanges.ToArray();
+        }
+
+        public IEnumerable<IDomainEvent> GetHistory()
+        {
+            return this.Changes.ToArray();
         }
 
         public void MarkChangesAsCommitted()
         {
-            this.Changes.AddRange(this.changes);
-            this.changes.Clear();
+            this.Changes.AddRange(this.uncommittedChanges);
+            this.uncommittedChanges.Clear();
         }
 
         protected void ApplyChange(Event<TAggregate> @event)
@@ -37,10 +45,11 @@ namespace EventStoreLite
             this.ApplyChange(@event, true);
         }
 
+        [DebuggerStepThrough]
         private void ApplyChange(IDomainEvent @event, bool isNew)
         {
             this.AsDynamic().Apply(@event);
-            if (isNew) this.changes.Add(@event);
+            if (isNew) this.uncommittedChanges.Add(@event);
         }
     }
 }

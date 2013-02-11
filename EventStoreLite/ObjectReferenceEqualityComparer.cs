@@ -1,8 +1,8 @@
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+
 namespace EventStoreLite
 {
-    using System.Collections.Generic;
-    using System.Runtime.CompilerServices;
-
     public class ObjectReferenceEqualityComparer<T> : EqualityComparer<T> where T : class
     {
         public static new readonly IEqualityComparer<T> Default = new ObjectReferenceEqualityComparer<T>();

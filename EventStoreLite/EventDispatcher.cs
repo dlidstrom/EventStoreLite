@@ -1,26 +1,28 @@
-﻿namespace EventStoreLite
-{
-    using System;
-    using System.Collections.Generic;
+﻿using System;
+using Castle.MicroKernel;
+using EventStoreLite.Infrastructure;
 
+namespace EventStoreLite
+{
     public class EventDispatcher
     {
-        private readonly Dictionary<Type, Action<IDomainEvent>> handlers
-            = new Dictionary<Type, Action<IDomainEvent>>(); 
+        private readonly IKernel kernel;
 
-        public void RegisterHandler<TEvent>(IEventHandler<TEvent> handler)
-            where TEvent : class, IDomainEvent
+        public EventDispatcher(IKernel kernel)
         {
-            var type = typeof(TEvent);
-            this.handlers[type] = @event => handler.Handle(@event as TEvent);
+            if (kernel == null) throw new ArgumentNullException("kernel");
+            this.kernel = kernel;
         }
 
-        public void Dispatch(IDomainEvent message)
+        public void Dispatch(IDomainEvent e)
         {
-            var type = message.GetType();
-            Action<IDomainEvent> handler;
-            if (this.handlers.TryGetValue(type, out handler))
-                handler.Invoke(message);
+            var type = typeof(IEventHandler<>).MakeGenericType(e.GetType());
+            var handlers = this.kernel.ResolveAll(type);
+            foreach (var handler in handlers)
+            {
+                handler.AsDynamic().Handle(e);
+                kernel.ReleaseComponent(handler);
+            }
         }
     }
 }
