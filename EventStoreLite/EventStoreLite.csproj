@@ -63,6 +63,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\AssemblyInfo.Shared.cs">
+      <Link>Properties\AssemblyInfo.Shared.cs</Link>
+    </Compile>
     <Compile Include="AggregateRoot.cs" />
     <Compile Include="IReadModel.cs" />
     <Compile Include="Indexes\WriteModelIndex.cs" />
@@ -76,7 +79,6 @@
     <Compile Include="ObjectReferenceEqualityComparer.cs" />
     <Compile Include="Infrastructure\PrivateReflectionDynamicObject.cs" />
     <Compile Include="Infrastructure\PrivateReflectionDynamicObjectExtensions.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
