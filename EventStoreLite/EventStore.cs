@@ -1,105 +1,93 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using EventStoreLite.Indexes;
+using EventStoreLite.IoC;
 using Raven.Abstractions.Data;
+using Raven.Client;
 using Raven.Client.Linq;
 
 namespace EventStoreLite
 {
-    using System;
-    using System.Collections.Generic;
-    using Raven.Client;
-
-    public class EventStore : IDisposable
+    /// <summary>
+    /// Represents the event store. Use this class to create event store sessions.
+    /// Typically, an instance of this class should be a singleton in your application.
+    /// </summary>
+    public class EventStore
     {
-        private readonly ISet<IAggregate> unitOfWork
-            = new HashSet<IAggregate>(ObjectReferenceEqualityComparer<object>.Default);
+        private static readonly object InitLock = new object();
+        private readonly IServiceLocator container;
+        private bool initialized;
 
-        private readonly IDocumentStore documentStore;
-        private readonly IDocumentSession documentSession;
-        private readonly EventDispatcher dispatcher;
-
-        public EventStore(
-            IDocumentStore documentStore,
-            IDocumentSession documentSession,
-            EventDispatcher dispatcher,
-            Assembly assembly)
+        internal EventStore(IServiceLocator container)
         {
-            if (documentStore == null) throw new ArgumentNullException("documentStore");
-            if (documentSession == null) throw new ArgumentNullException("documentSession");
-            if (dispatcher == null) throw new ArgumentNullException("dispatcher");
-            if (assembly == null) throw new ArgumentNullException("assembly");
-            this.documentStore = documentStore;
-            this.documentSession = documentSession;
-            this.dispatcher = dispatcher;
-            new ReadModelIndex(assembly).Execute(documentStore);
-            new WriteModelIndex().Execute(documentStore);
+            this.container = container;
         }
 
-        public TAggregate Load<TAggregate>(string id) where TAggregate : AggregateRoot<TAggregate>
+        internal EventStore Initialize(IEnumerable<Type> handlerTypes)
         {
-            var instance = this.documentSession.Load<TAggregate>(id);
-            if (instance != null)
-                instance.LoadFromHistory();
-            return instance;
-        }
-
-        public void Store<TAggregate>(AggregateRoot<TAggregate> aggregate) where TAggregate : class
-        {
-            this.unitOfWork.Add(aggregate);
-            this.documentSession.Store(aggregate);
-            var metadata = this.documentSession.Advanced.GetMetadataFor(aggregate);
-            metadata.Add("AggregateRoot", true);
-        }
-
-        public void SaveChanges()
-        {
-            foreach (var aggregate in this.unitOfWork)
+            lock (InitLock)
             {
-                foreach (var pendingEvent in aggregate.GetUncommittedChanges())
+                if (!this.initialized)
                 {
-                    if (string.IsNullOrEmpty(pendingEvent.AggregateId))
-                        pendingEvent.AggregateId = aggregate.Id;
-
-                    pendingEvent.TimeStamp = DateTimeOffset.Now;
-                    this.dispatcher.Dispatch(pendingEvent);
+                    var documentStore = (IDocumentStore)this.container.Resolve(typeof(IDocumentStore));
+                    new ReadModelIndex(handlerTypes).Execute(documentStore);
+                    new WriteModelIndex().Execute(documentStore);
+                    this.initialized = true;
                 }
-
-                aggregate.MarkChangesAsCommitted();
             }
 
-            this.documentSession.SaveChanges();
-            this.unitOfWork.Clear();
+            return this;
+        }
+
+        public IEventStoreSession OpenSession(IDocumentSession session)
+        {
+            return new EventStoreSession(session, new EventDispatcher(this.container));
         }
 
         public void RebuildReadModels()
         {
-            this.documentStore.DatabaseCommands.DeleteByIndex("ReadModelIndex", new IndexQuery());
+            var documentStore = (IDocumentStore)this.container.Resolve(typeof(IDocumentStore));
+            using (var documentSession = documentStore.OpenSession())
+            {
+                // allow indexing to take its time
+                documentSession.Query<IReadModel>("ReadModelIndex")
+                               .Customize(
+                                   x => x.WaitForNonStaleResultsAsOf(DateTime.Now.AddSeconds(15)))
+// ReSharper disable ReturnValueOfPureMethodIsNotUsed Workaround to force indexing
+                               .SingleOrDefault();
+// ReSharper restore ReturnValueOfPureMethodIsNotUsed
+                documentStore.DatabaseCommands.DeleteByIndex("ReadModelIndex", new IndexQuery());
+            }
 
+            var dispatcher = new EventDispatcher(this.container);
             var current = 0;
             while (true)
             {
-                using (var session = documentStore.OpenSession())
+                var session = (IDocumentSession)this.container.Resolve(typeof(IDocumentSession));
+                try
                 {
-                    var q = session.Query<IAggregate, WriteModelIndex>();
+                    // allow indexing to take its time
+                    var q =
+                        session.Query<IAggregate, WriteModelIndex>()
+                               .Customize(
+                                   x => x.WaitForNonStaleResultsAsOf(DateTime.Now.AddSeconds(15)));
 
-                    RavenQueryStatistics stats;
-                    var aggregates = q.Statistics(out stats).Skip(current).Take(11).ToList();
+                    var aggregates = q.Skip(current).Take(128).ToList();
                     if (aggregates.Count == 0) break;
                     foreach (var e in aggregates.SelectMany(aggregate => aggregate.GetHistory()))
                     {
-                        this.dispatcher.Dispatch(e);
+                        dispatcher.Dispatch(e);
                     }
 
                     session.SaveChanges();
                     current += aggregates.Count;
                 }
+                finally
+                {
+                    this.container.Release(session);
+                }
             }
-        }
-
-        public void Dispose()
-        {
-            this.documentSession.Dispose();
         }
     }
 }

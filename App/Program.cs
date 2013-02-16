@@ -1,15 +1,14 @@
-﻿using System.Linq;
-using Castle.MicroKernel.Lifestyle;
+﻿using Castle.MicroKernel.Lifestyle;
 using Castle.MicroKernel.Registration;
-using Castle.MicroKernel.SubSystems.Configuration;
 using Castle.Windsor;
 using EventStoreLite;
+using EventStoreLite.IoC;
 using Raven.Client;
+using Raven.Client.Document;
+using Raven.Client.Embedded;
 using SampleDomain.Domain;
-using SampleDomain.Handlers;
 using SampleDomain.ViewModels;
 using System;
-using Raven.Client.Document;
 
 namespace App
 {
@@ -31,9 +30,7 @@ namespace App
         {
             using (var container = CreateContainer())
             {
-                new Benchmark().Run(container);
-                return;
-                WithEventStore(container, CreateDomainObject);
+                WithEventStoreSession(container, CreateDomainObject);
 
                 // query the view model
                 WithSession(container, ShowNames);
@@ -50,16 +47,27 @@ namespace App
         {
             using (container.BeginScope())
             {
-                var store = container.Resolve<IDocumentStore>();
-                var session = container.Resolve<IDocumentSession>();
                 var eventStore = container.Resolve<EventStore>();
                 action.Invoke(eventStore);
-                eventStore.SaveChanges();
-                session.SaveChanges();
-                container.Release(eventStore);
-                container.Release(session);
-                container.Release(store);
             }
+        }
+
+        private static void WithEventStore(IWindsorContainer container, Action<IDocumentSession, IEventStoreSession> action)
+        {
+            using (container.BeginScope())
+            {
+                var session = container.Resolve<IDocumentSession>();
+                var eventStore = container.Resolve<EventStore>();
+                var eventStoreSession = eventStore.OpenSession(session);
+                action.Invoke(session, eventStoreSession);
+                eventStoreSession.SaveChanges();
+                container.Release(session);
+            }
+        }
+
+        private static void WithEventStoreSession(IWindsorContainer container, Action<IEventStoreSession> action)
+        {
+            WithEventStore(container, (s, e) => action.Invoke(e));
         }
 
         private static void WithSession(
@@ -78,19 +86,24 @@ namespace App
         {
             Console.WriteLine("Changes:");
             var vm = session.Load<NamesViewModel>(NamesViewModel.DatabaseId);
-            vm.Names.ForEach(Console.WriteLine);
+            if (vm != null)
+                vm.Names.ForEach(Console.WriteLine);
+            else
+            {
+                Console.WriteLine("No names found in db");
+            }
         }
 
-        private static void CreateDomainObject(EventStore store)
+        private static void CreateDomainObject(IEventStoreSession session)
         {
-            var existingCustomer = store.Load<Customer>("customers/1");
+            var existingCustomer = session.Load<Customer>("customers/1");
             if (existingCustomer != null)
                 existingCustomer.PrintName(Console.Out);
             else
             {
                 var customer = new Customer("Daniel Lidström");
                 customer.ChangeName("Per Daniel Lidström");
-                store.Store(customer);
+                session.Store(customer);
             }
         }
 
@@ -106,59 +119,17 @@ namespace App
                          .UsingFactoryMethod(
                              kernel => kernel.Resolve<IDocumentStore>().OpenSession())
                          .LifestyleScoped();
-            var eventStoreComponent =
-                Component.For<EventStore>()
-                         .UsingFactoryMethod(
-                             kernel =>
-                             new EventStore(
-                                 kernel.Resolve<IDocumentStore>(),
-                                 kernel.Resolve<IDocumentSession>(),
-                                 kernel.Resolve<EventDispatcher>(),
-                                 typeof(CustomerHandler).Assembly))
-                         .LifestyleTransient();
-            var eventDispatcherComponent =
-                Component.For<EventDispatcher>()
-                         .UsingFactoryMethod(kernel => new EventDispatcher(kernel));
             container.Register(
                 documentStoreComponent,
-                sessionComponent,
-                eventStoreComponent,
-                eventDispatcherComponent).Install(new HandlersInstaller());
+                sessionComponent);
+            container.Install(
+                new EventStoreInstaller(typeof(CustomerInitialized).Assembly.GetTypes()));
             return container;
-        }
-
-        private class HandlersInstaller : IWindsorInstaller
-        {
-            public void Install(IWindsorContainer container, IConfigurationStore store)
-            {
-                var types = typeof(Customer).Assembly.GetTypes();
-                foreach (var type in types.Where(x => x.IsClass && x.IsAbstract == false))
-                {
-                    RegisterEventTypes(container, type);
-                }
-            }
-
-            private static void RegisterEventTypes(IWindsorContainer container, Type type)
-            {
-                var interfaces = type.GetInterfaces();
-                foreach (var i in interfaces.Where(x => x.IsGenericType))
-                {
-                    var genericTypeDefinition = i.GetGenericTypeDefinition();
-                    if (!typeof(IEventHandler<>).IsAssignableFrom(genericTypeDefinition)) continue;
-                    var genericArguments = string.Join(
-                        ", ", i.GetGenericArguments().Select(x => x.ToString()));
-                    var registration =
-                        Component.For(i)
-                                 .ImplementedBy(type)
-                                 .LifestyleTransient()
-                                 .Named(string.Format("{0}<{1}>", type.FullName, genericArguments));
-                    container.Register(registration);
-                }
-            }
         }
 
         private static IDocumentStore CreateDocumentStore()
         {
+            //return new EmbeddableDocumentStore { RunInMemory = true }.Initialize();
             return new DocumentStore { Url = "http://localhost:8082" }.Initialize();
         }
     }

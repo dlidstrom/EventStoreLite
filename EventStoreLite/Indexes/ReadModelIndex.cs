@@ -8,22 +8,25 @@ using Raven.Client.Indexes;
 
 namespace EventStoreLite.Indexes
 {
-    public class ReadModelIndex : AbstractMultiMapIndexCreationTask<IReadModel>
+    internal class ReadModelIndex : AbstractMultiMapIndexCreationTask<IReadModel>
     {
-        public ReadModelIndex(Assembly assembly)
+        public ReadModelIndex()
         {
-            if (assembly == null) throw new ArgumentNullException("assembly");
-            this.AddMapForAllSub<IReadModel>(assembly, views => from view in views select new { view.Id });
         }
 
-        private void AddMapForAllSub<TBase>(Assembly assembly,
+        public ReadModelIndex(IEnumerable<Type> types)
+        {
+            if (types == null) throw new ArgumentNullException("types");
+            this.AddMapForAllSub<IReadModel>(types, views => from view in views select new { view.Id });
+        }
+
+        private void AddMapForAllSub<TBase>(IEnumerable<Type> types,
             Expression<Func<IEnumerable<TBase>, IEnumerable>> expr)
         {
             // Index the base class.
             AddMap(expr);
 
             // Index child classes.
-            var types = assembly.GetTypes().ToList();
             var children = types.Where(x => typeof(TBase).IsAssignableFrom(x)).ToList();
             var addMapGeneric = GetType().GetMethod("AddMap", BindingFlags.Instance | BindingFlags.NonPublic);
 

@@ -14,9 +14,5 @@ namespace SampleDomain.Domain
         public string OldName { get; set; }
 
         public string NewName { get; set; }
-
-        public override string AggregateId { get; set; }
-
-        public override DateTimeOffset TimeStamp { get; set; }
     }
 }

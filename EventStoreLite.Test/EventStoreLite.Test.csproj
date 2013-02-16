@@ -70,7 +70,11 @@
     <Compile Include="..\AssemblyInfo.Shared.cs">
       <Link>Properties\AssemblyInfo.Shared.cs</Link>
     </Compile>
+    <Compile Include="CustomerInitializedHandler.cs" />
+    <Compile Include="CustomerViewModel.cs" />
+    <Compile Include="EventStore_RebuildReadModels.cs" />
     <Compile Include="EventStore_Store.cs" />
+    <Compile Include="TestBase.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

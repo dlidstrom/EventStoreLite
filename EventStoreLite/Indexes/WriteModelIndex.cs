@@ -9,7 +9,7 @@ namespace EventStoreLite.Indexes
         {
             return new IndexDefinition
                    {
-                       Map = @"from doc in docs where doc[""@metadata""][""AggregateRoot""] != null select new { doc.Id }"
+                       Map = @"from doc in docs where doc[""@metadata""][""Aggregate-Root""] != null select new { doc.Id }"
                    };
         }
     }

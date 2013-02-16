@@ -4,7 +4,7 @@ namespace EventStoreLite
 {
     public interface IDomainEvent
     {
-        string AggregateId { get; set; }
-        DateTimeOffset TimeStamp { get; set; }
+        string AggregateId { get; }
+        DateTimeOffset TimeStamp { get; }
     }
 }

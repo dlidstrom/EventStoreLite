@@ -1,18 +1,16 @@
-﻿using System.Reflection;
-using Castle.MicroKernel.Registration;
+﻿using System;
+using System.Diagnostics;
+using System.Linq;
+using Castle.MicroKernel.Lifestyle;
 using Castle.Windsor;
+using NUnit.Framework;
+using Raven.Client;
 using SampleDomain.Domain;
 
 namespace EventStoreLite.Test
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using NUnit.Framework;
-    using Raven.Client.Embedded;
-
     [TestFixture]
-    public class EventStore_Store
+    public class EventStore_Store : TestBase
     {
         [Test]
         public void StoresAggregateInUnitOfWork()
@@ -22,74 +20,45 @@ namespace EventStoreLite.Test
 
             // Act
             WithEventStore(
+                CreateContainer(new[] { typeof(CustomerInitializedHandler) }),
                 session =>
-                    {
-                        session.Store(customer);
-                        var stored = session.Load<Customer>(customer.Id);
-                        // Assert
-                        Assert.That(stored, Is.Not.Null);
-                    });
+                {
+                    session.Store(customer);
+                    var stored = session.Load<Customer>(customer.Id);
+                    // Assert
+                    Assert.That(stored, Is.Not.Null);
+                });
         }
 
-        private class CustomerInitializedHandler : IEventHandler<CustomerInitialized>,
-            IEventHandler<CustomerNameChanged>
-        {
-            public string AggregateId { get; set; }
-
-            public void Handle(CustomerInitialized e)
-            {
-                AggregateId = e.AggregateId;
-            }
-
-            public void Handle(CustomerNameChanged e)
-            {
-            }
-        }
-
-        private static IEnumerable<Type> TypesImplementingInterface(Type desiredType)
-        {
-            return AppDomain
-                .CurrentDomain
-                .GetAssemblies()
-                .SelectMany(assembly => assembly.GetTypes())
-                .Where(desiredType.IsAssignableFrom);
-
-        }
         [Test]
         public void PublishesEvents()
         {
             // Arrange
             var customer = new Customer("My name");
-            var handler = new CustomerInitializedHandler();
-            var container =
-                new WindsorContainer().Register(Component.For<IEventHandler<CustomerInitialized>>().Instance(handler));
-            var eventDispatcher = new EventDispatcher(container.Kernel);
+            var container = CreateContainer(new[] { typeof(CustomerInitializedHandler) });
 
             // Act
-            WithEventStore(
-                eventDispatcher,
-                session =>
-                    {
-                        session.Store(customer);
-                        session.SaveChanges();
-                    });
+            WithEventStore(container, s => s.Store(customer));
 
             // Assert
-            Assert.That(handler.AggregateId, Is.Not.Null);
+            var session = container.Resolve<IDocumentSession>();
+            var vm = session.Query<CustomerViewModel>().Customize(x => x.WaitForNonStaleResults()).SingleOrDefault();
+            Assert.That(vm, Is.Not.Null);
+            Debug.Assert(vm != null, "vm != null");
+            Assert.That(vm.Name, Is.EqualTo("My name"));
         }
 
-        private static void WithEventStore(EventDispatcher dispatcher, Action<EventStore> action)
+        private static void WithEventStore(
+            IWindsorContainer container,
+            Action<IEventStoreSession> action)
         {
-            using (var documentStore = new EmbeddableDocumentStore { RunInMemory = true }.Initialize())
-            using (var session = new EventStore(documentStore, documentStore.OpenSession(), dispatcher, Assembly.GetExecutingAssembly()))
-            {
-                action.Invoke(session);
-            }
-        }
+            var eventStore = container.Resolve<EventStore>();
+            var documentSession = container.Resolve<IDocumentSession>();
+            var eventStoreSession = eventStore.OpenSession(documentSession);
+            action.Invoke(eventStoreSession);
 
-        private static void WithEventStore(Action<EventStore> action)
-        {
-            WithEventStore(new EventDispatcher(new WindsorContainer().Kernel), action);
+            // this will also save the document session
+            eventStoreSession.SaveChanges();
         }
     }
 }
