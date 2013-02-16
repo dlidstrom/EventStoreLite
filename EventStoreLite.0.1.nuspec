@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+    <metadata>
+        <id>EventStoreLite</id>
+        <version>0.1</version>
+        <title />
+        <authors>Daniel Lidstrom</authors>
+        <owners />
+        <licenseUrl>https://raw.github.com/dlidstrom/EventStoreLite/master/License.txt</licenseUrl>
+        <projectUrl>https://github.com/dlidstrom/EventStoreLite</projectUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>Event store that uses RavenDB for storing write models and read models. Contains an event dispatcher and base classes for creating aggregate roots and events and event listeners. The event store keeps track of write models and read models and can rebuild read models if desired.</description>
+        <summary />
+        <releaseNotes>First release to public.</releaseNotes>
+        <dependencies>
+            <group targetFramework=".NETFramework4.0">
+                <dependency id="RavenDB.Client" version="2.0.2261" />
+            </group>
+        </dependencies>
+    </metadata>
+    <files>
+        <file src="lib\net40\EventStoreLite.dll" target="lib\net40\EventStoreLite.dll" />
+        <file src="lib\net40\EventStoreLite.pdb" target="lib\net40\EventStoreLite.pdb" />
+    </files>
+</package>
