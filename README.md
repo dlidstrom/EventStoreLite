@@ -9,8 +9,9 @@ and there's also an implicit dependency on Castle Windsor, the ioc container.
 
 ## Usage
 
-Start by defining a domain model class that you wish to store as a write model. Here's an example domain class
-representing an account.
+Let's implement a domain class representing an account. The account should start off being inactive. Activating
+an account requires a password. Once activated, the account can validate passwords. Imagine this class being used
+for registering and logon scenarios.
 
 Start by adding a test for creation scenario:
 
@@ -26,7 +27,7 @@ Start by adding a test for creation scenario:
         Assert.That(events[0], Is.InstanceOf<AccountCreated>());
     }
 
-Here we expect to be able to create new accounts. We also expect an event of type `AccountCreated` to be applied
+Here we expect to be able to create new accounts. We also expect an event of type `AccountCreated` to be raised
 by the domain model.
 
 Let's implement the `Account` class:
@@ -41,7 +42,7 @@ Let's implement the `Account` class:
 
 Note the generic base class `AggregateRoot`, parameterized with the `Account` class itself. This turns `Account` into
 a domain model class. To make the test pass we need to raise an `AccountCreated` event. This is done by calling
-the base class method `Apply`:
+the base class method `ApplyChange`:
 
     public class Account : AggregateRoot<Account>
     {
@@ -64,14 +65,14 @@ We now need to define the event class `AccountCreated`:
     }
 
 Note here that the event class derives from the generic base class `Event`, parameterized with the domain model class.
-The reason for this is to tie the event class to the domain model class. It will become clear once we start subscribing
-to events published from our domain model.
+The reason for this is to tie the event class to the domain model class. It will become clear why once we start
+subscribing to events published from our domain model.
 
 ## Adding behaviour to `Account`
 
 Let's add a scenario to the `Account` class. We want the account to be inactive until it has been activated.
-Once activated we want to be able to verify passwords. This means we need to supply a password when activating the
-account. An inactive account should not verify passwords.
+Once activated we want to be able to validate passwords. This means we need to supply a password when activating the
+account. An inactive account should not be able to validate passwords.
 
 First test:
 
@@ -94,7 +95,7 @@ First test:
         }
     }
 
-This test currently fails to build. Let's implement it by adding the required method `CheckPassword`
+This test currently fails to build. Let's fix it by adding the required method `CheckPassword`
 with the expected behaviour:
 
     public class Account : AggregateRoot<Account>
@@ -108,13 +109,13 @@ with the expected behaviour:
 
         public bool ValidatePassword(string password)
         {
-            if (!activated) throw new InvalidOperationException("Cannot use inactive accounts to verify passwords");
+            if (!activated) throw new InvalidOperationException("Cannot use inactive accounts to validate passwords");
             return false;
         }
     }
 
 That should pass. Now we need a way to activate an account. Let's specify the behaviour and
-add a password while we're at it:
+add a password parameter while we're at it:
 
     [Test]
     public void CanActivateAccount()
@@ -138,6 +139,9 @@ To make it pass we need the following in our `Account` class:
         var @event = new AccountActivated();
         this.ApplyChange(@event);
     }
+
+An event is raised by calling the `ApplyChange` base class method. This will later be used to dispatch the event
+to event handlers when the domain class is persisted to RavenDB.
 
 Here's the `AccountActivated` class:
 
@@ -227,7 +231,8 @@ Now for the final piece of the puzzle: actually validating the password. Let's a
         Assert.That(account.ValidatePassword("some password"), Is.True);
     }
 
-To implement this, I'm going to go out on a limb and introduce password hashing with salt.
+To implement this, I'm going to go out on a limb and introduce salted password hashing (a controversial subject,
+tricky to do "right").
 Let's add this information to the `AccountActivated` event:
 
     public class AccountActivated : Event<Account>
@@ -310,7 +315,7 @@ Let me know!
 
         public bool ValidatePassword(string password)
         {
-            if (!activated) throw new InvalidOperationException("Cannot use inactive accounts to verify passwords");
+            if (!activated) throw new InvalidOperationException("Cannot use inactive accounts to validate passwords");
             return ComputeHashedPassword(this.salt, password) == passwordHash;
         }
 
