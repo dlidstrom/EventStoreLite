@@ -47,7 +47,7 @@ the base class method `Apply`:
     {
         public Account(string email)
         {
-            Apply(new AccountCreated(email));
+            this.ApplyChange(new AccountCreated(email));
         }
     }
 
@@ -67,11 +67,369 @@ Note here that the event class derives from the generic base class `Event`, para
 The reason for this is to tie the event class to the domain model class. It will become clear once we start subscribing
 to events published from our domain model.
 
-That's it for now!
-
 ## Adding behaviour to `Account`
 
-Coming later.
+Let's add a scenario to the `Account` class. We want the account to be inactive until it has been activated.
+Once activated we want to be able to verify passwords. This means we need to supply a password when activating the
+account. An inactive account should not verify passwords.
+
+First test:
+
+    [Test]
+    public void InactiveAccountDoesNotValidatePasswords()
+    {
+        // Arrange
+        var account = new Account("someone@domain.com");
+
+        // Act
+        try
+        {
+            account.ValidatePassword("some password");
+
+            // Assert
+            Assert.Fail("Should throw");
+        }
+        catch (InvalidOperationException)
+        {
+        }
+    }
+
+This test currently fails to build. Let's implement it by adding the required method `CheckPassword`
+with the expected behaviour:
+
+    public class Account : AggregateRoot<Account>
+    {
+        private bool activated;
+
+        public Account(string email)
+        {
+            this.ApplyChange(new AccountCreated(email));
+        }
+
+        public bool ValidatePassword(string password)
+        {
+            if (!activated) throw new InvalidOperationException("Cannot use inactive accounts to verify passwords");
+            return false;
+        }
+    }
+
+That should pass. Now we need a way to activate an account. Let's specify the behaviour and
+add a password while we're at it:
+
+    [Test]
+    public void CanActivateAccount()
+    {
+        // Arrange
+        var account = new Account("someone@domain.com");
+
+        // Act
+        account.Activate("some password");
+
+        // Assert
+        var events = account.GetUncommittedChanges();
+        Assert.That(events.Length, Is.EqualTo(2));
+        Assert.That(events[1], Is.InstanceOf<AccountActivated>());
+    }
+
+To make it pass we need the following in our `Account` class:
+
+    public void Activate(string password)
+    {
+        var @event = new AccountActivated();
+        this.ApplyChange(@event);
+    }
+
+Here's the `AccountActivated` class:
+
+    public class AccountActivated : Event<Account>
+    {
+    }
+
+It is empty for now but will soon have some necessary data for password validations.
+
+An activated account should be able to validate passwords. Let's specify this behaviour:
+
+    [Test]
+    public void ActivatedAccountCanValidatePasswords()
+    {
+        // Arrange
+        var account = new Account("someone@domain.com");
+
+        // Act
+        account.Activate("some password");
+
+        // Assert
+        account.ValidatePassword("");
+    }
+
+The assertion here is that no exception should be thrown. To implement it we have to add an event handler
+to our domain model for the `AccountActivated` event:
+
+    private void Apply(AccountActivated e)
+    {
+        activated = true;
+    }
+
+That's it, the test passes. Here's the complete domain model as of now:
+
+    public class Account : AggregateRoot<Account>
+    {
+        private bool activated;
+
+        public Account(string email)
+        {
+            this.ApplyChange(new AccountCreated(email));
+        }
+
+        public bool ValidatePassword(string password)
+        {
+            if (!activated) throw new InvalidOperationException("Cannot use inactive accounts to verify passwords");
+            return false;
+        }
+
+        public void Activate(string password)
+        {
+            var @event = new AccountActivated();
+            this.ApplyChange(@event);
+        }
+
+        private void Apply(AccountActivated e)
+        {
+            activated = true;
+        }
+    }
+
+Now for the final piece of the puzzle: actually validating the password. Let's add the tests:
+
+    [Test]
+    public void InvalidatesFalsePassword()
+    {
+        // Arrange
+        var account = new Account("someone@domain.com");
+
+        // Act
+        account.Activate("some password");
+
+        // Assert
+        Assert.That(account.ValidatePassword("invalid password"), Is.False);
+    }
+
+    [Test]
+    public void ValidatesTruePassword()
+    {
+        // Arrange
+        var account = new Account("someone@domain.com");
+
+        // Act
+        account.Activate("some password");
+
+        // Assert
+        Assert.That(account.ValidatePassword("some password"), Is.True);
+    }
+
+To implement this, I'm going to go out on a limb and introduce password hashing with salt.
+Let's add this information to the `AccountActivated` event:
+
+    public class AccountActivated : Event<Account>
+    {
+        public AccountActivated(Guid salt, string passwordHash)
+        {
+            Salt = salt;
+            PasswordHash = passwordHash;
+        }
+
+        public Guid Salt { get; set; }
+
+        public string PasswordHash { get; set; }
+    }
+
+Now update the `Account` class. Add the following method for password hashing:
+
+    // password hashing
+    private static string ComputeHashedPassword(Guid salt, string password)
+    {
+        string hashedPassword;
+        using (var sha = SHA256.Create())
+        {
+            var computedHash = sha.ComputeHash(
+                salt.ToByteArray().Concat(Encoding.Unicode.GetBytes(password)).ToArray());
+
+            hashedPassword = Convert.ToBase64String(computedHash);
+        }
+
+        return hashedPassword;
+    }
+
+Now change the `Activate` method:
+
+    public void Activate(string password)
+    {
+        var salt = Guid.NewGuid();
+        var @event = new AccountActivated(salt, ComputeHashedPassword(salt, password));
+        this.ApplyChange(@event);
+    }
+
+That's it, the tests should now all pass. Here's the complete `Account` class with the events:
+
+    public class Account : AggregateRoot<Account>
+    {
+        private bool activated;
+
+        public Account(string email)
+        {
+            this.ApplyChange(new AccountCreated(email));
+        }
+
+        public bool ValidatePassword(string password)
+        {
+            if (!activated)
+                throw new InvalidOperationException(
+                    "Cannot use inactive accounts to verify passwords");
+            return false;
+        }
+
+        public void Activate(string password)
+        {
+            var salt = Guid.NewGuid();
+            var @event = new AccountActivated(salt, ComputeHashedPassword(salt, password));
+            this.ApplyChange(@event);
+        }
+
+        private void Apply(AccountActivated e)
+        {
+            activated = true;
+        }
+
+        // password hashing
+        private static string ComputeHashedPassword(Guid salt, string password)
+        {
+            string hashedPassword;
+            using (var sha = SHA256.Create())
+            {
+                var computedHash = sha.ComputeHash(
+                    salt.ToByteArray().Concat(Encoding.Unicode.GetBytes(password)).ToArray());
+
+                hashedPassword = Convert.ToBase64String(computedHash);
+            }
+
+            return hashedPassword;
+        }
+    }
+
+    public class AccountCreated : Event<Account>
+    {
+        public string Email { get; set; }
+
+        public AccountCreated(string email)
+        {
+            Email = email;
+        }
+    }
+
+    public class AccountActivated : Event<Account>
+    {
+        public AccountActivated(Guid salt, string passwordHash)
+        {
+            Salt = salt;
+            PasswordHash = passwordHash;
+        }
+
+        public Guid Salt { get; set; }
+
+        public string PasswordHash { get; set; }
+    }
+
+And the tests:
+
+    [TestFixture]
+    public class AccountTest
+    {
+        [Test]
+        public void CanCreateNewAccount()
+        {
+            // Act
+            var account = new Account("someone@domain.com");
+
+            // Assert
+            var events = account.GetUncommittedChanges();
+            Assert.That(events.Length, Is.EqualTo(1));
+            Assert.That(events[0], Is.InstanceOf<AccountCreated>());
+        }
+
+        [Test]
+        public void InactiveAccountDoesNotValidatePasswords()
+        {
+            // Arrange
+            var account = new Account("someone@domain.com");
+
+            // Act
+            try
+            {
+                account.ValidatePassword("some password");
+
+                // Assert
+                Assert.Fail("Should throw");
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        }
+
+        [Test]
+        public void CanActivateAccount()
+        {
+            // Arrange
+            var account = new Account("someone@domain.com");
+
+            // Act
+            account.Activate("some password");
+
+            // Assert
+            var events = account.GetUncommittedChanges();
+            Assert.That(events.Length, Is.EqualTo(2));
+            Assert.That(events[1], Is.InstanceOf<AccountActivated>());
+        }
+
+        [Test]
+        public void ActivatedAccountCanValidatePasswords()
+        {
+            // Arrange
+            var account = new Account("someone@domain.com");
+
+            // Act
+            account.Activate("some password");
+
+            // Assert
+            account.ValidatePassword("");
+        }
+
+        [Test]
+        public void InvalidatesFalsePassword()
+        {
+            // Arrange
+            var account = new Account("someone@domain.com");
+
+            // Act
+            account.Activate("some password");
+
+            // Assert
+            Assert.That(account.ValidatePassword("invalid password"), Is.False);
+        }
+
+        [Test]
+        public void ValidatesTruePassword()
+        {
+            // Arrange
+            var account = new Account("someone@domain.com");
+
+            // Act
+            account.Activate("some password");
+
+            // Assert
+            Assert.That(account.ValidatePassword("some password"), Is.True);
+        }
+    }
+
 
 ## Persisting to RavenDB
 
@@ -89,7 +447,7 @@ Coming later
 
 There are a few things that you can do if you want to contribute.
 
-* Clone the repository first.
+* Clone the repository and check out the code.
 * Report any issues you find.
 * Contact me with any questions you might have.
 * The library currently requires an ioc container. I'd like to be able to use it without one.
