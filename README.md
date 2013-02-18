@@ -269,11 +269,39 @@ Now change the `Activate` method:
         this.ApplyChange(@event);
     }
 
-That's it, the tests should now all pass. Here's the complete `Account` class with the events:
+This should make `InvalidatesFalsePassword` pass. Now we'll fix the last test. Change the event handler
+for `AccountActivated` to this:
+
+    private void Apply(AccountActivated e)
+    {
+        activated = true;
+        this.salt = e.Salt;
+        this.passwordHash = e.PasswordHash;
+    }
+
+Add the two member variables required:
+
+    private Guid salt;
+    private string passwordHash;
+
+Finally, update the `ValidatePassword` method:
+
+    public bool ValidatePassword(string password)
+    {
+        if (!activated) throw new InvalidOperationException("Cannot use inactive accounts to verify passwords");
+        return ComputeHashedPassword(this.salt, password) == passwordHash;
+    }
+
+With that all of our tests should pass and the domain model is complete. Or are there other behaviours you can think of?
+Let me know!
+
+## Complete `Account` class with the events
 
     public class Account : AggregateRoot<Account>
     {
         private bool activated;
+        private Guid salt;
+        private string passwordHash;
 
         public Account(string email)
         {
@@ -282,10 +310,8 @@ That's it, the tests should now all pass. Here's the complete `Account` class wi
 
         public bool ValidatePassword(string password)
         {
-            if (!activated)
-                throw new InvalidOperationException(
-                    "Cannot use inactive accounts to verify passwords");
-            return false;
+            if (!activated) throw new InvalidOperationException("Cannot use inactive accounts to verify passwords");
+            return ComputeHashedPassword(this.salt, password) == passwordHash;
         }
 
         public void Activate(string password)
@@ -298,6 +324,8 @@ That's it, the tests should now all pass. Here's the complete `Account` class wi
         private void Apply(AccountActivated e)
         {
             activated = true;
+            this.salt = e.Salt;
+            this.passwordHash = e.PasswordHash;
         }
 
         // password hashing
@@ -314,29 +342,6 @@ That's it, the tests should now all pass. Here's the complete `Account` class wi
 
             return hashedPassword;
         }
-    }
-
-    public class AccountCreated : Event<Account>
-    {
-        public string Email { get; set; }
-
-        public AccountCreated(string email)
-        {
-            Email = email;
-        }
-    }
-
-    public class AccountActivated : Event<Account>
-    {
-        public AccountActivated(Guid salt, string passwordHash)
-        {
-            Salt = salt;
-            PasswordHash = passwordHash;
-        }
-
-        public Guid Salt { get; set; }
-
-        public string PasswordHash { get; set; }
     }
 
 And the tests:
