@@ -95,7 +95,7 @@ There are a few things that you can do if you want to contribute.
 * The library currently requires an ioc container. I'd like to be able to use it without one.
 * Implement support for more ioc containers. Currently there's only support for Castle Windsor. Contribute with AutoFac, StructureMap, Unity, etc.
 
-# Licence
+# License
 
 This library is licensed under the MIT license. See License.txt.
 
