@@ -187,7 +187,7 @@ That's it, the test passes. Here's the complete domain model as of now:
 
         public bool ValidatePassword(string password)
         {
-            if (!activated) throw new InvalidOperationException("Cannot use inactive accounts to verify passwords");
+            if (!activated) throw new InvalidOperationException("Cannot use inactive accounts to validate passwords");
             return false;
         }
 
