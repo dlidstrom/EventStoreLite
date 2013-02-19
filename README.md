@@ -12,7 +12,7 @@ Sweet spots for this library:
 * There's no service bus necessary (i.e. eventual consistency is not required for updating your read models)
 * Write models and read models are updated in the same transaction (so they're not likely to get out-of-sync)
 * You can use RavenDB's indexing features for your read models
-* Easily rebuild your read model store, for example when adding a new read model
+* Easily rebuild your read model store, for example after adding an event handler for a new read model
 
 What you don't get:
 * CQRS and the complexity it entails ([do you really need it?](http://www.cqrsinfo.com/is-cqrs-a-viable-solution))
