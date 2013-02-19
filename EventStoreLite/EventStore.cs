@@ -40,11 +40,19 @@ namespace EventStoreLite
             return this;
         }
 
+        /// <summary>
+        /// Opens a new event store session.
+        /// </summary>
+        /// <param name="session">Document session.</param>
+        /// <returns>Event store session.</returns>
         public IEventStoreSession OpenSession(IDocumentSession session)
         {
             return new EventStoreSession(session, new EventDispatcher(this.container));
         }
 
+        /// <summary>
+        /// Rebuilds all read models. This is a potentially lengthy operation!
+        /// </summary>
         public void RebuildReadModels()
         {
             var documentStore = (IDocumentStore)this.container.Resolve(typeof(IDocumentStore));

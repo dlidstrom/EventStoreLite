@@ -1,6 +1,6 @@
 namespace EventStoreLite
 {
-    public interface IAggregate
+    internal interface IAggregate
     {
         string Id { get; }
         IDomainEvent[] GetUncommittedChanges();

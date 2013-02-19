@@ -8,8 +8,14 @@ namespace EventStoreLite
     /// <typeparam name="TAggregate">Used to tie the event to an aggregate type.</typeparam>
     public abstract class Event<TAggregate> : IDomainEvent
     {
+        /// <summary>
+        /// Gets the aggregate id.
+        /// </summary>
         public string AggregateId { get; private set; }
 
+        /// <summary>
+        /// Gets the event time stamp.
+        /// </summary>
         public DateTimeOffset TimeStamp { get; private set; }
 
         internal void SetAggregateId(string id)
