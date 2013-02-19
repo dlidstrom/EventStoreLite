@@ -551,6 +551,11 @@ public class MvcApplication : HttpApplication
                                       new EventStoreInstaller(
                                           Assembly.GetExecutingAssembly().GetTypes()));
     }
+    
+    protected void Application_End()
+    {
+        Container.Dispose();
+    }
 }
 ```
 
