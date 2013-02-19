@@ -72,6 +72,7 @@
     </Compile>
     <Compile Include="CustomerInitializedHandler.cs" />
     <Compile Include="CustomerViewModel.cs" />
+    <Compile Include="EventStore_Load.cs" />
     <Compile Include="EventStore_RebuildReadModels.cs" />
     <Compile Include="EventStore_Store.cs" />
     <Compile Include="Handler.cs" />

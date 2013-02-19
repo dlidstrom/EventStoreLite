@@ -1,8 +1,5 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Linq;
-using Castle.MicroKernel.Lifestyle;
-using Castle.Windsor;
 using NUnit.Framework;
 using Raven.Client;
 using SampleDomain.Domain;
@@ -46,19 +43,6 @@ namespace EventStoreLite.Test
             Assert.That(vm, Is.Not.Null);
             Debug.Assert(vm != null, "vm != null");
             Assert.That(vm.Name, Is.EqualTo("My name"));
-        }
-
-        private static void WithEventStore(
-            IWindsorContainer container,
-            Action<IEventStoreSession> action)
-        {
-            var eventStore = container.Resolve<EventStore>();
-            var documentSession = container.Resolve<IDocumentSession>();
-            var eventStoreSession = eventStore.OpenSession(documentSession);
-            action.Invoke(eventStoreSession);
-
-            // this will also save the document session
-            eventStoreSession.SaveChanges();
         }
     }
 }
