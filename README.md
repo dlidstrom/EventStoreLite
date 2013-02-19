@@ -26,7 +26,7 @@ Still interested? Read on!
 The library can be installed from NuGet: http://nuget.org/packages/EventStoreLite. It requires you to use RavenDB
 and there's also an implicit dependency on Castle Windsor, the ioc container.
 
-## Usage
+## Domain modeling using event sourcing
 
 Let's implement a domain class representing an account. The account should start off being inactive. Activating
 an account requires a password. Once activated, the account can validate passwords. Imagine this class being used
@@ -133,7 +133,11 @@ with the expected behaviour:
         }
     }
 
-That should pass. Now we need a way to activate an account. Let's specify the behaviour and
+That should pass.
+
+### Activating the account
+
+Now we need a way to activate an account. Let's specify the behaviour and
 add a password parameter while we're at it:
 
     [Test]
@@ -221,6 +225,8 @@ That's it, the test passes. Here's the complete domain model as of now:
             activated = true;
         }
     }
+
+### Account password validation
 
 Now for the final piece of the puzzle: actually validating the password. Let's add the tests:
 
@@ -319,7 +325,7 @@ Finally, update the `ValidatePassword` method:
 With that all of our tests should pass and the domain model is complete. Or are there other behaviours you can think of?
 Let me know!
 
-## Complete `Account` class with the events
+### Complete `Account` class with the events
 
     public class Account : AggregateRoot<Account>
     {
@@ -607,7 +613,7 @@ The call to `EventStore.RebuildReadModels` will clear any stored read models (th
 to be able to find them using an index in RavenDB). Next, it will load all aggregate roots, one by one, and dispatch
 the events. It might take a while but once done we will have up-to-date read models.
 
-# Contribute
+## Contribute
 
 There are a few things that you can do if you want to contribute.
 
@@ -617,10 +623,10 @@ There are a few things that you can do if you want to contribute.
 * The library currently requires an ioc container. I'd like to be able to use it without one.
 * Implement support for more ioc containers. Currently there's only support for Castle Windsor. Contribute with AutoFac, StructureMap, Unity, etc.
 
-# License
+## License
 
 This library is licensed under the MIT license. See License.txt.
 
-# Author & contact details
+## Author & contact details
 
 Daniel Lidstrom (dlidstrom@gmail.com)
