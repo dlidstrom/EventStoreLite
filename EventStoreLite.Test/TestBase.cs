@@ -18,10 +18,10 @@ namespace EventStoreLite.Test
             return container;
         }
 
-        protected static IWindsorContainer CreateContainer(IEnumerable<Type> types)
+        protected static IWindsorContainer CreateContainer(IEnumerable<Type> readModelTypes)
         {
             var container = RegisterRaven();
-            container.Install(new EventStoreInstaller(types));
+            container.Install(new EventStoreInstaller(readModelTypes));
             return container;
         }
 

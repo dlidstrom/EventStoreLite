@@ -74,6 +74,7 @@
     <Compile Include="CustomerViewModel.cs" />
     <Compile Include="EventStore_RebuildReadModels.cs" />
     <Compile Include="EventStore_Store.cs" />
+    <Compile Include="Handler.cs" />
     <Compile Include="TestBase.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -13,12 +13,12 @@ namespace EventStoreLite.IoC
     public class EventStoreInstaller : IWindsorInstaller
     {
         private readonly IEnumerable<IEventHandler> handlers;
-        private readonly IEnumerable<Type> types;
+        private readonly IEnumerable<Type> readModelTypes;
 
-        public EventStoreInstaller(IEnumerable<Type> types)
+        public EventStoreInstaller(IEnumerable<Type> readModelTypes)
         {
-            if (types == null) throw new ArgumentNullException("types");
-            this.types = types;
+            if (readModelTypes == null) throw new ArgumentNullException("readModelTypes");
+            this.readModelTypes = readModelTypes;
         }
 
         public EventStoreInstaller(IEnumerable<IEventHandler> handlers)
@@ -34,9 +34,9 @@ namespace EventStoreLite.IoC
                          .UsingFactoryMethod<EventStore>(x => CreateEventStore(container))
                          .LifestyleSingleton());
 
-            if (this.types != null)
+            if (this.readModelTypes != null)
             {
-                foreach (var type in this.types.Where(x => x.IsClass && x.IsAbstract == false))
+                foreach (var type in this.readModelTypes.Where(x => x.IsClass && x.IsAbstract == false))
                 {
                     RegisterEventTypes(container, type);
                 }
@@ -53,8 +53,8 @@ namespace EventStoreLite.IoC
 
         private EventStore CreateEventStore(IWindsorContainer container)
         {
-            if (this.types != null)
-                return new EventStore(new WindsorServiceLocator(container)).Initialize(this.types);
+            if (this.readModelTypes != null)
+                return new EventStore(new WindsorServiceLocator(container)).Initialize(this.readModelTypes);
 
             return new EventStore(new WindsorServiceLocator(container)).Initialize(this.handlers.Select(x => x.GetType()));
         }

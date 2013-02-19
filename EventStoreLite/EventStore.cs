@@ -24,14 +24,14 @@ namespace EventStoreLite
             this.container = container;
         }
 
-        internal EventStore Initialize(IEnumerable<Type> handlerTypes)
+        internal EventStore Initialize(IEnumerable<Type> readModelTypes)
         {
             lock (InitLock)
             {
                 if (!this.initialized)
                 {
                     var documentStore = (IDocumentStore)this.container.Resolve(typeof(IDocumentStore));
-                    new ReadModelIndex(handlerTypes).Execute(documentStore);
+                    new ReadModelIndex(readModelTypes).Execute(documentStore);
                     new WriteModelIndex().Execute(documentStore);
                     this.initialized = true;
                 }
@@ -55,7 +55,7 @@ namespace EventStoreLite
                                .Customize(
                                    x => x.WaitForNonStaleResultsAsOf(DateTime.Now.AddSeconds(15)))
 // ReSharper disable ReturnValueOfPureMethodIsNotUsed Workaround to force indexing
-                               .SingleOrDefault();
+                               .FirstOrDefault();
 // ReSharper restore ReturnValueOfPureMethodIsNotUsed
                 documentStore.DatabaseCommands.DeleteByIndex("ReadModelIndex", new IndexQuery());
             }

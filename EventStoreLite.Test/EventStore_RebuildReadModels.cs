@@ -1,5 +1,4 @@
-﻿using System;
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using Raven.Client;
 using SampleDomain.Domain;
 
@@ -27,16 +26,6 @@ namespace EventStoreLite.Test
             Assert.That(documentSession.Load<CustomerViewModel>(viewModel.Id), Is.Null);
         }
 
-        private class Handler : IEventHandler<CustomerInitialized>
-        {
-            public Action Callback { get; set; }
-
-            public void Handle(CustomerInitialized e)
-            {
-                Callback.Invoke();
-            }
-        }
-
         [Test]
         public void DispatchesAllEvents()
         {
@@ -56,6 +45,26 @@ namespace EventStoreLite.Test
 
             // Assert
             Assert.That(called, Is.EqualTo(2));
+        }
+
+        private class ReadModel : IReadModel
+        {
+            public string Id { get; private set; }
+        }
+
+        [Test]
+        public void CanCleanSeveralReadModels()
+        {
+            // Arrange
+            var container = CreateContainer(new[] { typeof(ReadModel) });
+            var eventStore = container.Resolve<EventStore>();
+            var documentSession = container.Resolve<IDocumentSession>();
+            documentSession.Store(new ReadModel());
+            documentSession.Store(new ReadModel());
+            documentSession.SaveChanges();
+
+            // Act & Assert
+            eventStore.RebuildReadModels();
         }
     }
 }
