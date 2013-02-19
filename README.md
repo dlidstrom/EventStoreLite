@@ -462,15 +462,150 @@ And the tests:
 
 ## Persisting to RavenDB
 
-Coming later.
+### Configuring Castle Windsor
+
+You need to configure Castle Windsor with components for RavenDB document store and document session, and finally
+the event store. Here's an example for an ASP.NET MVC application:
+
+    public class MvcApplication : HttpApplication
+    {
+        public static IWindsorContainer Container { get; private set; }
+        protected void Application_Start()
+        {
+            AreaRegistration.RegisterAllAreas();
+
+            WebApiConfig.Register(GlobalConfiguration.Configuration);
+            FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
+            RouteConfig.RegisterRoutes(RouteTable.Routes);
+            BundleConfig.RegisterBundles(BundleTable.Bundles);
+
+            var storeComponent =
+                Component.For<IDocumentStore>()
+                         .UsingFactoryMethod(
+                             k => new DocumentStore { Url = "http://localhost:8082" }.Initialize())
+                             .LifestyleSingleton();
+            var sessionComponent =
+                Component.For<IDocumentSession>()
+                         .UsingFactoryMethod(k => k.Resolve<IDocumentStore>().OpenSession())
+                         .LifestylePerWebRequest();
+            var esSessionComponent =
+                Component.For<IEventStoreSession>()
+                         .UsingFactoryMethod(
+                             k => k.Resolve<EventStore>().OpenSession(k.Resolve<IDocumentSession>()))
+                         .LifestylePerWebRequest();
+            Container =
+                new WindsorContainer().Register(storeComponent, sessionComponent, esSessionComponent)
+                                      .Install(
+                                          new EventStoreInstaller(
+                                              Assembly.GetExecutingAssembly().GetTypes()));
+        }
+    }
+
+Observe the `new EventStoreIntaller(Assembly.GetExecutingAssembly().GetTypes())`. It will install event handlers
+found in the executing assembly into the container. This is used by the event store to resolve event handlers and
+dispatching events raised from domain models.
+
+### Storing an instance of `Account`
+
+    [HttpPost]
+    public ActionResult CreateAccount(string email)
+    {
+        var account = new Account(email);
+        var session = MvcApplication.Container.Resolve<IEventStoreSession>();
+        session.Store(account);
+        session.SaveChanges();
+        return RedirectToAction("Index");
+    }
+
+This will store an instance of `Account` into the event store. It will also dispatch the events raised by the domain
+object, and we will see later how to handle these events using event handlers.
+
+### Loading and activating an instance of `Account`
+
+    public ActionResult ActivateAccount(string id, string password)
+    {
+        var session = MvcApplication.Container.Resolve<IEventStoreSession>();
+        var account = session.Load<Account>(id);
+        if (account == null) throw new HttpException(404, "Account not found");
+        account.Activate(password);
+        session.SaveChanges();
+        return RedirectToAction("Index");
+    }
+
+This will load an instance of `Account`, verify that it existed and then proceed to activate it. The event store
+will dispatch the events raised when activating the account to any event handlers registered at startup.
 
 ## Creating read models by subscribing to events
 
-Coming later.
+Let's define an event handler that creates read models for each account. Here's a sample:
+
+    public class AccountReadModel : IReadModel
+    {
+        public string Id { get; set; }
+
+        public string Email { get; set; }
+
+        public bool Activated { get; set; }
+    }
+    
+    public class AccountHandler : IEventHandler<AccountCreated>,
+                                  IEventHandler<AccountActivated>
+    {
+        private readonly IDocumentSession session;
+
+        public AccountHandler(IDocumentSession session)
+        {
+            this.session = session;
+        }
+
+        public void Handle(AccountCreated e)
+        {
+            var id = GetId(e);
+            session.Store(new AccountReadModel { Id = id, Email = e.Email, Activated = false });
+        }
+
+        public void Handle(AccountActivated e)
+        {
+            var id = GetId(e);
+            var rm = session.Load<AccountReadModel>(id);
+            rm.Activated = true;
+        }
+
+        private static string GetId(IDomainEvent e)
+        {
+            return "account-read-models/" + int.Parse(e.AggregateId.Substring(e.AggregateId.LastIndexOf('/') + 1));
+        }
+    }
+
+Note the interface `IEventHandler` which is derived from twice, once for each type of event. Also note that we can
+use dependency injection here. `IDocumentSession` will be injected by Castle Windsor. Finally, the read model should
+derive from `IReadModel`. This is used when rebuilding read models from scratch, as we'll see shortly.
+
+We can now query RavenDB for `AccountReadModel`:
+
+    public ActionResult Index()
+    {
+        var session = MvcApplication.Container.Resolve<IDocumentSession>();
+        return this.View(session.Query<AccountReadModel>().ToList());
+    }
+
+Simple, eh?
 
 ## Rebuilding read models
 
-Coming later
+Let's say we've stored a whole bunch of accounts. Now, we add the above event handler. We want it to handle all accounts,
+back to the beginning of time. The event store allows us to do that, simply by:
+
+    [HttpPost]
+    public ActionResult RebuildReadModels()
+    {
+        MvcApplication.Container.Resolve<EventStore>().RebuildReadModels();
+        return RedirectToAction("Index");
+    }
+
+The call to `EventStore.RebuildReadModels` will clear any stored read models (that's why we derive from `IReadModel`,
+to be able to find them using an index in RavenDB). Next, it will load all aggregate roots, one by one, and dispatch
+the events. It might take a while but once done we will have up-to-date read models.
 
 # Contribute
 
