@@ -72,6 +72,7 @@ public class Account : AggregateRoot<Account>
 {
     public Account(string email)
     {
+        if (email == null) throw new ArgumentNullException("email");
         this.ApplyChange(new AccountCreated(email));
     }
 }
@@ -134,6 +135,7 @@ public class Account : AggregateRoot<Account>
 
     public Account(string email)
     {
+        if (email == null) throw new ArgumentNullException("email");
         this.ApplyChange(new AccountCreated(email));
     }
 
@@ -228,6 +230,7 @@ public class Account : AggregateRoot<Account>
 
     public Account(string email)
     {
+        if (email == null) throw new ArgumentNullException("email");
         this.ApplyChange(new AccountCreated(email));
     }
 
@@ -374,6 +377,7 @@ public class Account : AggregateRoot<Account>
 
     public Account(string email)
     {
+        if (email == null) throw new ArgumentNullException("email");
         this.ApplyChange(new AccountCreated(email));
     }
 
