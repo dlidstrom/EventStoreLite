@@ -25,7 +25,11 @@ namespace EventStoreLite
         {
             var instance = this.documentSession.Load<TAggregate>(id);
             if (instance != null)
+            {
                 instance.LoadFromHistory();
+                this.unitOfWork.Add(instance);
+            }
+
             return instance;
         }
 

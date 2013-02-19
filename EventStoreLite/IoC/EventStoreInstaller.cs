@@ -14,19 +14,41 @@ namespace EventStoreLite.IoC
     {
         private readonly IEnumerable<IEventHandler> handlers;
         private readonly IEnumerable<Type> readModelTypes;
+        private readonly IEnumerable<Type> handlerTypes;
 
-        public EventStoreInstaller(IEnumerable<Type> readModelTypes)
+        /// <summary>
+        /// Initializes a new instance of the EventStoreInstaller class.
+        /// Use this constructor to register event handler types.
+        /// </summary>
+        /// <param name="readModelTypes">List of read model types.</param>
+        /// <param name="handlerTypes">List of event handler types.</param>
+        public EventStoreInstaller(IEnumerable<Type> readModelTypes, IEnumerable<Type> handlerTypes)
         {
             if (readModelTypes == null) throw new ArgumentNullException("readModelTypes");
+            if (handlerTypes == null) throw new ArgumentNullException("handlerTypes");
             this.readModelTypes = readModelTypes;
+            this.handlerTypes = handlerTypes;
         }
 
-        public EventStoreInstaller(IEnumerable<IEventHandler> handlers)
+        /// <summary>
+        /// Initializes a new instance of the EventStoreInstaller class.
+        /// Use this constructor to register event handler instances.
+        /// </summary>
+        /// <param name="readModelTypes">List of read model types.</param>
+        /// <param name="handlers">List of event handler instances.</param>
+        public EventStoreInstaller(IEnumerable<Type> readModelTypes, IEnumerable<IEventHandler> handlers)
         {
+            if (readModelTypes == null) throw new ArgumentNullException("readModelTypes");
             if (handlers == null) throw new ArgumentNullException("handlers");
+            this.readModelTypes = readModelTypes;
             this.handlers = handlers;
         }
 
+        /// <summary>
+        /// Installs the event store and the handler types or instances to the specified container.
+        /// </summary>
+        /// <param name="container">Container instance.</param>
+        /// <param name="store">Configuration store.</param>
         public void Install(IWindsorContainer container, IConfigurationStore store)
         {
             container.Register(
@@ -34,9 +56,9 @@ namespace EventStoreLite.IoC
                          .UsingFactoryMethod<EventStore>(x => CreateEventStore(container))
                          .LifestyleSingleton());
 
-            if (this.readModelTypes != null)
+            if (this.handlerTypes != null)
             {
-                foreach (var type in this.readModelTypes.Where(x => x.IsClass && x.IsAbstract == false))
+                foreach (var type in handlerTypes.Where(x => x.IsClass && x.IsAbstract == false))
                 {
                     RegisterEventTypes(container, type);
                 }
@@ -44,7 +66,7 @@ namespace EventStoreLite.IoC
 
             if (this.handlers != null)
             {
-                foreach (var handler in this.handlers)
+                foreach (var handler in handlers)
                 {
                     RegisterEventTypes(container, handler.GetType(), handler);
                 }
@@ -53,10 +75,10 @@ namespace EventStoreLite.IoC
 
         private EventStore CreateEventStore(IWindsorContainer container)
         {
-            if (this.readModelTypes != null)
-                return new EventStore(new WindsorServiceLocator(container)).Initialize(this.readModelTypes);
+            if (handlerTypes != null)
+                return new EventStore(new WindsorServiceLocator(container)).Initialize(handlerTypes);
 
-            return new EventStore(new WindsorServiceLocator(container)).Initialize(this.handlers.Select(x => x.GetType()));
+            return new EventStore(new WindsorServiceLocator(container)).Initialize(handlers.Select(x => x.GetType()));
         }
 
         private static void RegisterEventTypes(IWindsorContainer container, Type type, object instance = null)

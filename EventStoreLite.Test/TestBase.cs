@@ -14,14 +14,14 @@ namespace EventStoreLite.Test
         protected static IWindsorContainer CreateContainer(IEnumerable<IEventHandler> handlers)
         {
             var container = RegisterRaven();
-            container.Install(new EventStoreInstaller(handlers));
+            container.Install(new EventStoreInstaller(Assembly.GetExecutingAssembly().GetTypes(), handlers));
             return container;
         }
 
-        protected static IWindsorContainer CreateContainer(IEnumerable<Type> readModelTypes)
+        protected static IWindsorContainer CreateContainer(IEnumerable<Type> handlerTypes)
         {
             var container = RegisterRaven();
-            container.Install(new EventStoreInstaller(readModelTypes));
+            container.Install(new EventStoreInstaller(Assembly.GetExecutingAssembly().GetTypes(), handlerTypes));
             return container;
         }
 

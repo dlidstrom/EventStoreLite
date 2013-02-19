@@ -56,7 +56,7 @@ namespace EventStoreLite.Test
         public void CanCleanSeveralReadModels()
         {
             // Arrange
-            var container = CreateContainer(new[] { typeof(ReadModel) });
+            var container = CreateContainer(new IEventHandler[0]);
             var eventStore = container.Resolve<EventStore>();
             var documentSession = container.Resolve<IDocumentSession>();
             documentSession.Store(new ReadModel());
