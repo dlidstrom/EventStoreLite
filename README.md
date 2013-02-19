@@ -17,7 +17,7 @@ Sweet spots for this library:
 What you don't get:
 * CQRS and the complexity it entails ([do you really need it?](http://www.cqrsinfo.com/is-cqrs-a-viable-solution))
 * A service bus
-* Eventual consistency for your read models
+* Eventual consistency for your read models (we perform updates to write model and read model in the same transaction)
 
 Still interested? Read on!
 
