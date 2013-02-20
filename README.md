@@ -636,7 +636,7 @@ public class AccountHandler : IEventHandler<AccountCreated>,
 
     private static string GetId(IDomainEvent e)
     {
-        return "account-read-models/" + int.Parse(e.AggregateId.Substring(e.AggregateId.LastIndexOf('/') + 1));
+        return "account-read-models/" + e.AggregateId;
     }
 }
 ```
