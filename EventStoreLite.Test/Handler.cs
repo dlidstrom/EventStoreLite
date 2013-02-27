@@ -12,7 +12,7 @@ namespace EventStoreLite.Test
 
         public Action Callback { get; set; }
 
-        public void Handle(CustomerInitialized e)
+        public void Handle(CustomerInitialized e, string aggregateId)
         {
             this.Callback.Invoke();
         }

@@ -32,9 +32,10 @@ namespace EventStoreLite.Test
             // Arrange
             var called = 0;
             var container = CreateContainer(new[] { new Handler { Callback = () => called ++ } });
+            var documentStore = container.Resolve<IDocumentStore>();
             var eventStore = container.Resolve<EventStore>();
             var documentSession = container.Resolve<IDocumentSession>();
-            var eventStoreSession = eventStore.OpenSession(documentSession);
+            var eventStoreSession = eventStore.OpenSession(documentStore, documentSession);
             var aggregate = new Customer("Customer name");
             eventStoreSession.Store(aggregate);
             eventStoreSession.SaveChanges();

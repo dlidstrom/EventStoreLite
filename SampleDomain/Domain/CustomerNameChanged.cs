@@ -1,9 +1,8 @@
-using System;
 using EventStoreLite;
 
 namespace SampleDomain.Domain
 {
-    public class CustomerNameChanged : Event<Customer>
+    public class CustomerNameChanged : Event
     {
         public CustomerNameChanged(string oldName, string newName)
         {

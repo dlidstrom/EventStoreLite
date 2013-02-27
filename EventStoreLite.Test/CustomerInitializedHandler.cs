@@ -17,18 +17,18 @@ namespace EventStoreLite.Test
 
         public string AggregateId { get; set; }
 
-        public void Handle(CustomerInitialized e)
+        public void Handle(CustomerInitialized e, string aggregateId)
         {
-            this.AggregateId = e.AggregateId;
+            this.AggregateId = aggregateId;
             var viewModel = new CustomerViewModel
                             {
-                                AggregateId = e.AggregateId,
+                                AggregateId = aggregateId,
                                 Name = e.Name
                             };
             this.session.Store(viewModel);
         }
 
-        public void Handle(CustomerNameChanged e)
+        public void Handle(CustomerNameChanged e, string aggregateId)
         {
         }
     }

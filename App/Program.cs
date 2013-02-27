@@ -56,9 +56,10 @@ namespace App
         {
             using (container.BeginScope())
             {
+                var store = container.Resolve<IDocumentStore>();
                 var session = container.Resolve<IDocumentSession>();
                 var eventStore = container.Resolve<EventStore>();
-                var eventStoreSession = eventStore.OpenSession(session);
+                var eventStoreSession = eventStore.OpenSession(store, session);
                 action.Invoke(session, eventStoreSession);
                 eventStoreSession.SaveChanges();
                 container.Release(session);
@@ -96,7 +97,7 @@ namespace App
 
         private static void CreateDomainObject(IEventStoreSession session)
         {
-            var existingCustomer = session.Load<Customer>("customers/1");
+            var existingCustomer = session.Load<Customer>("EventStreams/Customers/5");
             if (existingCustomer != null)
                 existingCustomer.PrintName(Console.Out);
             else
@@ -131,7 +132,7 @@ namespace App
         private static IDocumentStore CreateDocumentStore()
         {
             //return new EmbeddableDocumentStore { RunInMemory = true }.Initialize();
-            return new DocumentStore { Url = "http://localhost:8082" }.Initialize();
+            return new DocumentStore { Url = "http://localhost:8082", DefaultDatabase = "App" }.Initialize();
         }
     }
 }

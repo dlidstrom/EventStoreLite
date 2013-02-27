@@ -4,7 +4,7 @@ using EventStoreLite;
 
 namespace SampleDomain.Domain
 {
-    public class Customer : AggregateRoot<Customer>
+    public class Customer : AggregateRoot
     {
         private string name;
         private bool hasChangedName;
@@ -14,11 +14,6 @@ namespace SampleDomain.Domain
         {
             if (name == null) throw new ArgumentNullException("name");
             this.ApplyChange(new CustomerInitialized(name));
-        }
-
-        // necessary for loading from event store
-        private Customer()
-        {
         }
 
         public void ChangeName(string newName)

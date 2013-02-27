@@ -17,13 +17,13 @@ namespace EventStoreLite
             this.container = container;
         }
 
-        public void Dispatch(IDomainEvent e)
+        public void Dispatch(IDomainEvent e, string aggregateId)
         {
             var type = typeof(IEventHandler<>).MakeGenericType(e.GetType());
             var handlers = this.container.ResolveAll(type);
             foreach (var handler in handlers)
             {
-                handler.AsDynamic().Handle(e);
+                handler.AsDynamic().Handle(e, aggregateId);
             }
         }
     }

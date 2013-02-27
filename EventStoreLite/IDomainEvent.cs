@@ -8,11 +8,6 @@ namespace EventStoreLite
     public interface IDomainEvent
     {
         /// <summary>
-        /// Gets the aggregate id.
-        /// </summary>
-        string AggregateId { get; }
-
-        /// <summary>
         /// Gets the event time stamp.
         /// </summary>
         DateTimeOffset TimeStamp { get; }

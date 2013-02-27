@@ -32,7 +32,7 @@ namespace EventStoreLite
                 {
                     var documentStore = (IDocumentStore)this.container.Resolve(typeof(IDocumentStore));
                     new ReadModelIndex(readModelTypes).Execute(documentStore);
-                    new WriteModelIndex().Execute(documentStore);
+
                     this.initialized = true;
                 }
             }
@@ -43,11 +43,12 @@ namespace EventStoreLite
         /// <summary>
         /// Opens a new event store session.
         /// </summary>
+        /// <param name="documentStore">Document store.</param>
         /// <param name="session">Document session.</param>
         /// <returns>Event store session.</returns>
-        public IEventStoreSession OpenSession(IDocumentSession session)
+        public IEventStoreSession OpenSession(IDocumentStore documentStore, IDocumentSession session)
         {
-            return new EventStoreSession(session, new EventDispatcher(this.container));
+            return new EventStoreSession(documentStore, session, new EventDispatcher(this.container));
         }
 
         /// <summary>
@@ -77,19 +78,21 @@ namespace EventStoreLite
                 {
                     // allow indexing to take its time
                     var q =
-                        session.Query<IAggregate, WriteModelIndex>()
-                               .Customize(
-                                   x => x.WaitForNonStaleResultsAsOf(DateTime.Now.AddSeconds(15)));
+                        session.Query<EventStream>()
+                               .Customize(x => x.WaitForNonStaleResultsAsOf(DateTime.Now.AddSeconds(15)));
 
-                    var aggregates = q.Skip(current).Take(128).ToList();
-                    if (aggregates.Count == 0) break;
-                    foreach (var e in aggregates.SelectMany(aggregate => aggregate.GetHistory()))
+                    var eventStreams = q.Skip(current).Take(128).ToList();
+                    if (eventStreams.Count == 0) break;
+                    foreach (var eventStream in eventStreams)
                     {
-                        dispatcher.Dispatch(e);
+                        foreach (var domainEvent in eventStream.History)
+                        {
+                            dispatcher.Dispatch(domainEvent, eventStream.Id);
+                        }
                     }
 
                     session.SaveChanges();
-                    current += aggregates.Count;
+                    current += eventStreams.Count;
                 }
                 finally
                 {

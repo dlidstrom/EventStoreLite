@@ -8,29 +8,25 @@ namespace EventStoreLite
     /// <summary>
     /// Used to define aggregate roots.
     /// </summary>
-    /// <typeparam name="TAggregate">Type of aggregate class.</typeparam>
-    public abstract class AggregateRoot<TAggregate> : IAggregate where TAggregate : class
+    public abstract class AggregateRoot : IAggregate
     {
-        private readonly List<IDomainEvent> uncommittedChanges = new List<IDomainEvent>();
+        private List<IDomainEvent> uncommittedChanges = new List<IDomainEvent>();
 
         /// <summary>
-        /// Initializes a new instance of the AggregateRoot class.
+        /// Gets the id.
         /// </summary>
-        protected AggregateRoot()
+        public string Id { get; private set; }
+
+        internal void SetId(string id)
         {
-            this.Changes = new List<IDomainEvent>();
+            Id = id;
         }
 
-        /// <summary>
-        /// Gets or sets the id.
-        /// </summary>
-        public string Id { get; set; }
-
-        private List<IDomainEvent> Changes { get; set; }
-
-        internal void LoadFromHistory()
+        internal void LoadFromHistory(IEnumerable<IDomainEvent> history)
         {
-            this.Changes.ForEach(x => this.ApplyChange(x, false));
+            if (history == null) throw new ArgumentNullException("history");
+            uncommittedChanges = new List<IDomainEvent>();
+            foreach (var domainEvent in history) this.ApplyChange(domainEvent, false);
         }
 
         /// <summary>
@@ -45,30 +41,10 @@ namespace EventStoreLite
         }
 
         /// <summary>
-        /// Gets the history of this aggregate root. This is the
-        /// complete list of events that have been raised by this
-        /// aggregate root.
-        /// </summary>
-        /// <returns>Event history.</returns>
-        public IDomainEvent[] GetHistory()
-        {
-            return this.Changes.ToArray();
-        }
-
-        /// <summary>
-        /// Called implicitly from the event store when saving changes.
-        /// </summary>
-        internal void MarkChangesAsCommitted()
-        {
-            this.Changes.AddRange(this.uncommittedChanges);
-            this.uncommittedChanges.Clear();
-        }
-
-        /// <summary>
         /// Applies the event to this aggregate root instance.
         /// </summary>
         /// <param name="event">Event instance.</param>
-        protected void ApplyChange(Event<TAggregate> @event)
+        protected void ApplyChange(Event @event)
         {
             if (@event == null) throw new ArgumentNullException("event");
             this.ApplyChange(@event, true);

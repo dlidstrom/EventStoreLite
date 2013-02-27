@@ -1,16 +1,15 @@
 ﻿using NUnit.Framework;
 using Raven.Client;
-using Raven.Imports.Newtonsoft.Json;
 
 namespace EventStoreLite.Test
 {
     [TestFixture]
     public class EventStore_Load : TestBase
     {
-        private class AggregateCreated : Event<Aggregate> { }
-        private class AggregateChanged : Event<Aggregate> { }
+        private class AggregateCreated : Event { }
+        private class AggregateChanged : Event { }
 
-        private class Aggregate : AggregateRoot<Aggregate>
+        private class Aggregate : AggregateRoot
         {
             public Aggregate()
             {
@@ -25,7 +24,6 @@ namespace EventStoreLite.Test
                 Changed = true;
             }
 
-            [JsonIgnore]
             public bool Changed { get; private set; }
         }
 
@@ -45,9 +43,10 @@ namespace EventStoreLite.Test
                 });
 
             // Assert
-            using (var session = container.Resolve<IDocumentStore>().OpenSession())
+            var documentStore = container.Resolve<IDocumentStore>();
+            using (var session = documentStore.OpenSession())
             {
-                var es = container.Resolve<EventStore>().OpenSession(session);
+                var es = container.Resolve<EventStore>().OpenSession(documentStore, session);
                 var a = es.Load<Aggregate>(aggregate.Id);
                 Assert.That(a, Is.Not.Null);
                 Assert.That(a.Changed, Is.True);

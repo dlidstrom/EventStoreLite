@@ -4,6 +4,5 @@ namespace EventStoreLite
     {
         string Id { get; }
         IDomainEvent[] GetUncommittedChanges();
-        IDomainEvent[] GetHistory();
     }
 }

@@ -17,6 +17,7 @@
         /// Handle the event.
         /// </summary>
         /// <param name="e">Event instance.</param>
-        void Handle(TEvent e);
+        /// <param name="aggregateId">Aggregate id.</param>
+        void Handle(TEvent e, string aggregateId);
     }
 }

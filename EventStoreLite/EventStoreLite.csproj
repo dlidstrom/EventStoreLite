@@ -70,12 +70,13 @@
     <Compile Include="AggregateRoot.cs" />
     <Compile Include="EventStore.cs" />
     <Compile Include="EventStoreSession.cs" />
+    <Compile Include="EventStream.cs" />
+    <Compile Include="EventStreamAndAggregateRoot.cs" />
     <Compile Include="IEventStoreSession.cs" />
     <Compile Include="IoC\EventStoreInstaller.cs" />
     <Compile Include="IoC\IServiceLocator.cs" />
     <Compile Include="IoC\WindsorServiceLocator.cs" />
     <Compile Include="IReadModel.cs" />
-    <Compile Include="Indexes\WriteModelIndex.cs" />
     <Compile Include="Indexes\ReadModelIndex.cs" />
     <Compile Include="Event.cs" />
     <Compile Include="EventDispatcher.cs" />

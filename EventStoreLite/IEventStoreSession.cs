@@ -11,14 +11,13 @@ namespace EventStoreLite
         /// <typeparam name="TAggregate">Type of aggregate root.</typeparam>
         /// <param name="id">Aggregate identifier.</param>
         /// <returns>Aggregate root instance.</returns>
-        TAggregate Load<TAggregate>(string id) where TAggregate : AggregateRoot<TAggregate>;
+        TAggregate Load<TAggregate>(string id) where TAggregate : AggregateRoot;
 
         /// <summary>
         /// Persists the specified aggregate root to the event store.
         /// </summary>
-        /// <typeparam name="TAggregate">Type of aggregate root.</typeparam>
         /// <param name="aggregate">Aggregate root instance.</param>
-        void Store<TAggregate>(AggregateRoot<TAggregate> aggregate) where TAggregate : class;
+        void Store(AggregateRoot aggregate);
 
         /// <summary>
         /// Commits to the event store. This will dispatch any raised events,

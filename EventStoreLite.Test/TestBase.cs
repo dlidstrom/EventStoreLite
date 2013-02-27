@@ -29,9 +29,10 @@ namespace EventStoreLite.Test
             IWindsorContainer container,
             Action<IEventStoreSession> action)
         {
+            var documentStore = container.Resolve<IDocumentStore>();
             var eventStore = container.Resolve<EventStore>();
             var documentSession = container.Resolve<IDocumentSession>();
-            var eventStoreSession = eventStore.OpenSession(documentSession);
+            var eventStoreSession = eventStore.OpenSession(documentStore, documentSession);
             action.Invoke(eventStoreSession);
 
             // this will also save the document session
