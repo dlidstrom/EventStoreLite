@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
     <metadata>
         <id>EventStoreLite</id>
-        <version>0.1.1</version>
+        <version>0.2</version>
         <title />
         <authors>Daniel Lidstrom</authors>
         <owners />
@@ -13,8 +13,8 @@
         <summary />
         <releaseNotes>
 Bug fixes:
-* Fixed bug when rebuilding read models.
-* Loaded instances are registered with unit of work.
+* Aggregate roots have no constrainsts anymore. Events are stored in an internal class.
+* Simplified events so that they are no longer generic.
         </releaseNotes>
         <dependencies>
             <group targetFramework=".NETFramework4.0">
