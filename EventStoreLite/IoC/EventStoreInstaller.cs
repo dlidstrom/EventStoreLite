@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Castle.MicroKernel.Registration;
 using Castle.MicroKernel.SubSystems.Configuration;
 using Castle.Windsor;
@@ -13,20 +14,34 @@ namespace EventStoreLite.IoC
     public class EventStoreInstaller : IWindsorInstaller
     {
         private readonly IEnumerable<IEventHandler> handlers;
-        private readonly IEnumerable<Type> readModelTypes;
         private readonly IEnumerable<Type> handlerTypes;
+
+        public static EventStoreInstaller FromAssembly(Assembly assembly)
+        {
+            if (assembly == null) throw new ArgumentNullException("assembly");
+            return new EventStoreInstaller(assembly.GetTypes());
+        }
+
+        public static EventStoreInstaller FromHandlerTypes(IEnumerable<Type> handlerTypes)
+        {
+            if (handlerTypes == null) throw new ArgumentNullException("handlerTypes");
+            return new EventStoreInstaller(handlerTypes);
+        }
+
+        public static EventStoreInstaller FromHandlerInstances(IEnumerable<IEventHandler> handlers)
+        {
+            if (handlers == null) throw new ArgumentNullException("handlers");
+            return new EventStoreInstaller(handlers);
+        }
 
         /// <summary>
         /// Initializes a new instance of the EventStoreInstaller class.
         /// Use this constructor to register event handler types.
         /// </summary>
-        /// <param name="readModelTypes">List of read model types.</param>
         /// <param name="handlerTypes">List of event handler types.</param>
-        public EventStoreInstaller(IEnumerable<Type> readModelTypes, IEnumerable<Type> handlerTypes)
+        private EventStoreInstaller(IEnumerable<Type> handlerTypes)
         {
-            if (readModelTypes == null) throw new ArgumentNullException("readModelTypes");
             if (handlerTypes == null) throw new ArgumentNullException("handlerTypes");
-            this.readModelTypes = readModelTypes;
             this.handlerTypes = handlerTypes;
         }
 
@@ -34,13 +49,10 @@ namespace EventStoreLite.IoC
         /// Initializes a new instance of the EventStoreInstaller class.
         /// Use this constructor to register event handler instances.
         /// </summary>
-        /// <param name="readModelTypes">List of read model types.</param>
         /// <param name="handlers">List of event handler instances.</param>
-        public EventStoreInstaller(IEnumerable<Type> readModelTypes, IEnumerable<IEventHandler> handlers)
+        private EventStoreInstaller(IEnumerable<IEventHandler> handlers)
         {
-            if (readModelTypes == null) throw new ArgumentNullException("readModelTypes");
             if (handlers == null) throw new ArgumentNullException("handlers");
-            this.readModelTypes = readModelTypes;
             this.handlers = handlers;
         }
 

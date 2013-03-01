@@ -124,8 +124,7 @@ namespace App
                 documentStoreComponent,
                 sessionComponent);
             container.Install(
-                new EventStoreInstaller(
-                    typeof(CustomerInitialized).Assembly.GetTypes(), typeof(CustomerInitialized).Assembly.GetTypes()));
+                EventStoreInstaller.FromAssembly(typeof(CustomerInitialized).Assembly));
             return container;
         }
 
