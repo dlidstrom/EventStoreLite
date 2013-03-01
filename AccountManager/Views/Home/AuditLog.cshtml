@@ -1,0 +1,15 @@
+﻿@model List<AccountManager.ReadModels.AuditLogReadModel>
+
+<table>
+    <tr>
+        <th>Change</th>
+    </tr>
+
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>@item.Change</td>
+        </tr>
+    }
+
+</table>

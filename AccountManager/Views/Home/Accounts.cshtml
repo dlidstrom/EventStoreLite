@@ -1,0 +1,6 @@
+﻿@using System.Globalization
+@model AccountManager.ReadModels.AccountStatsReadModel
+
+<footer>
+    <p>Total number of accounts: @(Model != null ? Model.Total.ToString(CultureInfo.InvariantCulture) : "unknown")</p>
+</footer>

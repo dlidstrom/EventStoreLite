@@ -1,0 +1,30 @@
+﻿@model List<AccountManager.ReadModels.AccountReadModel>
+
+<table>
+    <tr>
+        <th>Id</th>
+        <th>Email</th>
+        <th>Activated</th>
+        <th></th>
+    </tr>
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>@item.Id.Replace("ReadModels/", string.Empty)</td>
+            <td>@item.Email</td>
+            <td>@item.Activated</td>
+            @if (item.Activated)
+            {
+                <td></td>
+            }
+            else
+            {
+                <td>@Html.ActionLink("Activate account", "ActivateAccount", new { item.Id })</td>
+            }
+        </tr>
+    }
+</table>
+@Html.ActionLink("Create account", "CreateAccount")
+@Html.ActionLink("Recreate read models", "RecreateReadModels")
+
+@Html.Action("AuditLog")

@@ -1,0 +1,10 @@
+﻿@model AccountManager.ReadModels.AccountReadModel
+
+<h3>Activate @Model.Email</h3>
+@using (Html.BeginForm())
+{
+    @Html.Hidden("aggregateId", Model.AggregateId)
+    <label>Password: </label>
+    @Html.TextBox("password")
+    <input type="submit" value="Activate" />
+}
