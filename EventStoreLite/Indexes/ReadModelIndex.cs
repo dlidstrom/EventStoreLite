@@ -10,10 +10,6 @@ namespace EventStoreLite.Indexes
 {
     internal class ReadModelIndex : AbstractMultiMapIndexCreationTask<IReadModel>
     {
-        public ReadModelIndex()
-        {
-        }
-
         public ReadModelIndex(IEnumerable<Type> types)
         {
             if (types == null) throw new ArgumentNullException("types");

@@ -16,40 +16,48 @@ namespace EventStoreLite.IoC
         private readonly IEnumerable<IEventHandler> handlers;
         private readonly IEnumerable<Type> handlerTypes;
 
+        /// <summary>
+        /// Installs event handlers from the specified assembly.
+        /// </summary>
+        /// <param name="assembly">Assembly with event handlers.</param>
+        /// <returns>Event store installer for Castle Windsor.</returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public static EventStoreInstaller FromAssembly(Assembly assembly)
         {
             if (assembly == null) throw new ArgumentNullException("assembly");
             return new EventStoreInstaller(assembly.GetTypes());
         }
 
+        /// <summary>
+        /// Installs the specified event handler types.
+        /// </summary>
+        /// <param name="handlerTypes">Event handler types.</param>
+        /// <returns>Event store installer for Castle Windsor.</returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public static EventStoreInstaller FromHandlerTypes(IEnumerable<Type> handlerTypes)
         {
             if (handlerTypes == null) throw new ArgumentNullException("handlerTypes");
             return new EventStoreInstaller(handlerTypes);
         }
 
+        /// <summary>
+        /// Installs the specified event handler instances.
+        /// </summary>
+        /// <param name="handlers">Event handler instances.</param>
+        /// <returns>Event store installer for Castle Windsor.</returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public static EventStoreInstaller FromHandlerInstances(IEnumerable<IEventHandler> handlers)
         {
             if (handlers == null) throw new ArgumentNullException("handlers");
             return new EventStoreInstaller(handlers);
         }
 
-        /// <summary>
-        /// Initializes a new instance of the EventStoreInstaller class.
-        /// Use this constructor to register event handler types.
-        /// </summary>
-        /// <param name="handlerTypes">List of event handler types.</param>
         private EventStoreInstaller(IEnumerable<Type> handlerTypes)
         {
             if (handlerTypes == null) throw new ArgumentNullException("handlerTypes");
             this.handlerTypes = handlerTypes;
         }
 
-        /// <summary>
-        /// Initializes a new instance of the EventStoreInstaller class.
-        /// Use this constructor to register event handler instances.
-        /// </summary>
-        /// <param name="handlers">List of event handler instances.</param>
         private EventStoreInstaller(IEnumerable<IEventHandler> handlers)
         {
             if (handlers == null) throw new ArgumentNullException("handlers");

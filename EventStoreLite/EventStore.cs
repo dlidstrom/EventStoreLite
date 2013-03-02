@@ -22,11 +22,14 @@ namespace EventStoreLite
 
         internal EventStore(IServiceLocator container)
         {
+            if (container == null) throw new ArgumentNullException("container");
             this.container = container;
         }
 
         internal EventStore Initialize(IEnumerable<Type> readModelTypes)
         {
+            if (readModelTypes == null) throw new ArgumentNullException("readModelTypes");
+
             lock (InitLock)
             {
                 if (!this.initialized)
@@ -49,6 +52,9 @@ namespace EventStoreLite
         /// <returns>Event store session.</returns>
         public IEventStoreSession OpenSession(IDocumentStore documentStore, IDocumentSession session)
         {
+            if (documentStore == null) throw new ArgumentNullException("documentStore");
+            if (session == null) throw new ArgumentNullException("session");
+
             return new EventStoreSession(documentStore, session, new EventDispatcher(this.container));
         }
 
