@@ -31,6 +31,8 @@ namespace EventStoreLite
 
         public TAggregate Load<TAggregate>(string id) where TAggregate : AggregateRoot
         {
+            if (id == null) throw new ArgumentNullException("id");
+
             EventStreamAndAggregateRoot unitOfWorkInstance;
             if (entitiesByKey.TryGetValue(id, out unitOfWorkInstance))
                 return unitOfWorkInstance.AggregateRoot as TAggregate;
@@ -50,6 +52,8 @@ namespace EventStoreLite
 
         public void Store(AggregateRoot aggregate)
         {
+            if (aggregate == null) throw new ArgumentNullException("aggregate");
+
             var typeTagName = documentStore.Conventions.GetTypeTagName(aggregate.GetType());
             var hilo = new HiLoKeyGenerator("EventStreams", 4);
             var eventStream = new EventStream();
@@ -75,10 +79,11 @@ namespace EventStoreLite
                     this.dispatcher.Dispatch(pendingEvent, eventStream.Id);
                     eventStream.History.Add(pendingEvent);
                 }
+
+                aggregateRoot.ClearUncommittedChanges();
             }
 
             this.documentSession.SaveChanges();
-            this.unitOfWork.Clear();
         }
     }
 }

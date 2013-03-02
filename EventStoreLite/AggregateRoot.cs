@@ -19,6 +19,7 @@ namespace EventStoreLite
 
         internal void SetId(string id)
         {
+            if (id == null) throw new ArgumentNullException("id");
             Id = id;
         }
 
@@ -38,6 +39,15 @@ namespace EventStoreLite
         public IDomainEvent[] GetUncommittedChanges()
         {
             return this.uncommittedChanges.ToArray();
+        }
+
+        /// <summary>
+        /// Clears the uncommitted changes. This is done when
+        /// changes have been committed to the event store.
+        /// </summary>
+        internal void ClearUncommittedChanges()
+        {
+            this.uncommittedChanges = new List<IDomainEvent>();
         }
 
         /// <summary>

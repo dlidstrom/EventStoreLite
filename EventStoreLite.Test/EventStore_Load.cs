@@ -6,27 +6,6 @@ namespace EventStoreLite.Test
     [TestFixture]
     public class EventStore_Load : TestBase
     {
-        private class AggregateCreated : Event { }
-        private class AggregateChanged : Event { }
-
-        private class Aggregate : AggregateRoot
-        {
-            public Aggregate()
-            {
-                this.ApplyChange(new AggregateCreated());
-            }
-            public void Change()
-            {
-                this.ApplyChange(new AggregateChanged());
-            }
-            private void Apply(AggregateChanged e)
-            {
-                Changed = true;
-            }
-
-            public bool Changed { get; private set; }
-        }
-
         [Test]
         public void PlacesAggregateInUnitOfWork()
         {

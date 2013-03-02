@@ -70,9 +70,13 @@
     <Compile Include="..\AssemblyInfo.Shared.cs">
       <Link>Properties\AssemblyInfo.Shared.cs</Link>
     </Compile>
+    <Compile Include="Aggregate.cs" />
+    <Compile Include="AggregateChanged.cs" />
+    <Compile Include="AggregateCreated.cs" />
     <Compile Include="ConflictDetectionTest.cs" />
     <Compile Include="CustomerInitializedHandler.cs" />
     <Compile Include="CustomerViewModel.cs" />
+    <Compile Include="EventStoreSession_SaveChanges.cs" />
     <Compile Include="EventStore_Load.cs" />
     <Compile Include="EventStore_LoadToAnotherAggregateRootClass.cs" />
     <Compile Include="EventStore_RebuildReadModels.cs" />
