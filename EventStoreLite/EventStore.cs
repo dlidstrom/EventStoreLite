@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using EventStoreLite.Indexes;
 using EventStoreLite.IoC;
 using Raven.Abstractions.Data;
@@ -57,18 +58,24 @@ namespace EventStoreLite
         public void RebuildReadModels()
         {
             var documentStore = (IDocumentStore)this.container.Resolve(typeof(IDocumentStore));
-            using (var documentSession = documentStore.OpenSession())
-            {
-                // allow indexing to take its time
-                documentSession.Query<IReadModel>("ReadModelIndex")
-                               .Customize(
-                                   x => x.WaitForNonStaleResultsAsOf(DateTime.Now.AddSeconds(15)))
-// ReSharper disable ReturnValueOfPureMethodIsNotUsed Workaround to force indexing
-                               .FirstOrDefault();
-// ReSharper restore ReturnValueOfPureMethodIsNotUsed
-                documentStore.DatabaseCommands.DeleteByIndex("ReadModelIndex", new IndexQuery());
-            }
 
+            // wait for indexing to complete
+            var indexingTask = Task.Run(
+                () =>
+                    {
+                        while (true)
+                        {
+                            var s = documentStore.DatabaseCommands.GetStatistics().StaleIndexes;
+                            if (!s.Contains("ReadModelIndex")) break;
+                            Task.Delay(500).Wait();
+                        }
+                    });
+            indexingTask.Wait(15000);
+
+            // delete all read models
+            documentStore.DatabaseCommands.DeleteByIndex("ReadModelIndex", new IndexQuery());
+
+            // load all event streams and dispatch events
             var dispatcher = new EventDispatcher(this.container);
             var current = 0;
             while (true)
