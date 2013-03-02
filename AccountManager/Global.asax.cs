@@ -24,6 +24,7 @@ namespace AccountManager
             FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
             RouteConfig.RegisterRoutes(RouteTable.Routes);
 
+            // registers the document store, singleton lifestyle
             var storeComponent =
                 Component.For<IDocumentStore>()
                          .UsingFactoryMethod(
@@ -34,10 +35,17 @@ namespace AccountManager
                                  DefaultDatabase = "EventStoreLite"
                              }.Initialize())
                          .LifestyleSingleton();
-            var sessionComponent =
-                Component.For<IDocumentSession>()
-                         .UsingFactoryMethod(k => k.Resolve<IDocumentStore>().OpenSession())
-                         .LifestylePerWebRequest();
+
+            // registers the document session, per web request lifestyle
+            var sessionComponent = Component.For<IDocumentSession>().UsingFactoryMethod(
+                k =>
+                    {
+                        var session = k.Resolve<IDocumentStore>().OpenSession();
+                        session.Advanced.UseOptimisticConcurrency = true;
+                        return session;
+                    }).LifestylePerWebRequest();
+
+            // registers the event store session, per web request
             var esSessionComponent =
                 Component.For<IEventStoreSession>()
                          .UsingFactoryMethod(
@@ -46,10 +54,12 @@ namespace AccountManager
                               .OpenSession(
                                   k.Resolve<IDocumentStore>(), k.Resolve<IDocumentSession>()))
                          .LifestylePerWebRequest();
+
+            // registers event handlers from the current assembly
+            var eventStoreInstaller = EventStoreInstaller.FromAssembly(Assembly.GetExecutingAssembly());
             Container =
                 new WindsorContainer().Register(storeComponent, sessionComponent, esSessionComponent)
-                                      .Install(
-                                          EventStoreInstaller.FromAssembly(Assembly.GetExecutingAssembly()));
+                                      .Install(eventStoreInstaller);
         }
     }
 }
