@@ -52,5 +52,23 @@ namespace EventStoreLite.Test
                 Assert.That(a.Changed, Is.True);
             }
         }
+
+        [Test]
+        public void LoadsSecondFromUnitOfWork()
+        {
+            // Arrange
+            var aggregate = new Aggregate();
+            var container = CreateContainer();
+            var eventStore = container.Resolve<EventStore>();
+            var eventStoreSession = eventStore.OpenSession(
+                container.Resolve<IDocumentStore>(), container.Resolve<IDocumentSession>());
+            eventStoreSession.Store(aggregate);
+
+            // Act
+            var secondAggregate = eventStoreSession.Load<Aggregate>(aggregate.Id);
+
+            // Assert
+            Assert.That(secondAggregate, Is.SameAs(aggregate));
+        }
     }
 }

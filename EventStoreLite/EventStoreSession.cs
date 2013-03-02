@@ -9,6 +9,8 @@ namespace EventStoreLite
 {
     internal class EventStoreSession : IEventStoreSession
     {
+        private readonly Dictionary<string, EventStreamAndAggregateRoot> entitiesByKey =
+            new Dictionary<string, EventStreamAndAggregateRoot>();
         private readonly HashSet<EventStreamAndAggregateRoot> unitOfWork
             = new HashSet<EventStreamAndAggregateRoot>(ObjectReferenceEqualityComparer<object>.Default);
 
@@ -29,12 +31,17 @@ namespace EventStoreLite
 
         public TAggregate Load<TAggregate>(string id) where TAggregate : AggregateRoot
         {
+            EventStreamAndAggregateRoot unitOfWorkInstance;
+            if (entitiesByKey.TryGetValue(id, out unitOfWorkInstance))
+                return unitOfWorkInstance.AggregateRoot as TAggregate;
             var stream = this.documentSession.Load<EventStream>(id);
             if (stream != null)
             {
                 var instance = (TAggregate)FormatterServices.GetUninitializedObject(typeof(TAggregate));
                 instance.LoadFromHistory(stream.History);
-                this.unitOfWork.Add(new EventStreamAndAggregateRoot(stream, instance));
+                var eventStreamAndAggregateRoot = new EventStreamAndAggregateRoot(stream, instance);
+                this.unitOfWork.Add(eventStreamAndAggregateRoot);
+                this.entitiesByKey.Add(id, eventStreamAndAggregateRoot);
                 return instance;
             }
 
@@ -50,7 +57,9 @@ namespace EventStoreLite
             eventStream.Id = string.Format("EventStreams/{0}/{1}", typeTagName, id.Substring(id.LastIndexOf('/') + 1));
             this.documentSession.Store(eventStream);
             aggregate.SetId(eventStream.Id);
-            this.unitOfWork.Add(new EventStreamAndAggregateRoot(eventStream, aggregate));
+            var eventStreamAndAggregateRoot = new EventStreamAndAggregateRoot(eventStream, aggregate);
+            this.unitOfWork.Add(eventStreamAndAggregateRoot);
+            this.entitiesByKey.Add(eventStream.Id, eventStreamAndAggregateRoot);
         }
 
         public void SaveChanges()
