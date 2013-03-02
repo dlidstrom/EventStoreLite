@@ -44,6 +44,7 @@ namespace EventStoreLite
         /// Applies the event to this aggregate root instance.
         /// </summary>
         /// <param name="event">Event instance.</param>
+        [DebuggerStepThrough]
         protected void ApplyChange(Event @event)
         {
             if (@event == null) throw new ArgumentNullException("event");
