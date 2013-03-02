@@ -42,6 +42,15 @@
     <Reference Include="Castle.Windsor">
       <HintPath>..\packages\Castle.Windsor.3.1.0\lib\net40\Castle.Windsor.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.Practices.ServiceLocation">
+      <HintPath>..\packages\CommonServiceLocator.1.0\lib\NET35\Microsoft.Practices.ServiceLocation.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Practices.Unity">
+      <HintPath>..\packages\Unity.2.1.505.2\lib\NET35\Microsoft.Practices.Unity.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Practices.Unity.Configuration">
+      <HintPath>..\packages\Unity.2.1.505.2\lib\NET35\Microsoft.Practices.Unity.Configuration.dll</HintPath>
+    </Reference>
     <Reference Include="Raven.Abstractions, Version=2.0.0.0, Culture=neutral, PublicKeyToken=37f41c7f99471593, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\RavenDB.Client.2.0.2261\lib\net40\Raven.Abstractions.dll</HintPath>
@@ -73,9 +82,11 @@
     <Compile Include="EventStream.cs" />
     <Compile Include="EventStreamAndAggregateRoot.cs" />
     <Compile Include="IEventStoreSession.cs" />
-    <Compile Include="IoC\EventStoreInstaller.cs" />
+    <Compile Include="IoC\Castle\EventStoreInstaller.cs" />
+    <Compile Include="IoC\Castle\WindsorServiceLocator.cs" />
     <Compile Include="IoC\IServiceLocator.cs" />
-    <Compile Include="IoC\WindsorServiceLocator.cs" />
+    <Compile Include="IoC\Unity\EventStoreContainerExtension.cs" />
+    <Compile Include="IoC\Unity\UnityServiceLocator.cs" />
     <Compile Include="IReadModel.cs" />
     <Compile Include="Indexes\ReadModelIndex.cs" />
     <Compile Include="Event.cs" />

@@ -2,10 +2,9 @@
 using Castle.MicroKernel.Registration;
 using Castle.Windsor;
 using EventStoreLite;
-using EventStoreLite.IoC;
+using EventStoreLite.IoC.Castle;
 using Raven.Client;
 using Raven.Client.Document;
-using Raven.Client.Embedded;
 using SampleDomain.Domain;
 using SampleDomain.ViewModels;
 using System;

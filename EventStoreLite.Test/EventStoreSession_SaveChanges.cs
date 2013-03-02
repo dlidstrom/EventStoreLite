@@ -6,16 +6,6 @@ namespace EventStoreLite.Test
     [TestFixture]
     public class EventStoreSession_SaveChanges : TestBase
     {
-        private class AggregateHandler : IEventHandler<AggregateChanged>
-        {
-            public int Changes { get; private set; }
-
-            public void Handle(AggregateChanged e, string aggregateId)
-            {
-                Changes++;
-            }
-        }
-
         [Test]
         public void CanSaveChangesSeveralTimes()
         {

@@ -6,7 +6,7 @@ using Castle.MicroKernel.Registration;
 using Castle.MicroKernel.SubSystems.Configuration;
 using Castle.Windsor;
 
-namespace EventStoreLite.IoC
+namespace EventStoreLite.IoC.Castle
 {
     /// <summary>
     /// Installs the event store into a Castle Windsor container.
@@ -73,12 +73,12 @@ namespace EventStoreLite.IoC
         {
             container.Register(
                 Component.For<EventStore>()
-                         .UsingFactoryMethod<EventStore>(x => CreateEventStore(container))
+                         .UsingFactoryMethod<EventStore>(x => this.CreateEventStore(container))
                          .LifestyleSingleton());
 
             if (this.handlerTypes != null)
             {
-                foreach (var type in handlerTypes.Where(x => x.IsClass && x.IsAbstract == false))
+                foreach (var type in this.handlerTypes.Where(x => x.IsClass && x.IsAbstract == false))
                 {
                     RegisterEventTypes(container, type);
                 }
@@ -86,7 +86,7 @@ namespace EventStoreLite.IoC
 
             if (this.handlers != null)
             {
-                foreach (var handler in handlers)
+                foreach (var handler in this.handlers)
                 {
                     RegisterEventTypes(container, handler.GetType(), handler);
                 }
@@ -95,10 +95,10 @@ namespace EventStoreLite.IoC
 
         private EventStore CreateEventStore(IWindsorContainer container)
         {
-            if (handlerTypes != null)
-                return new EventStore(new WindsorServiceLocator(container)).Initialize(handlerTypes);
+            if (this.handlerTypes != null)
+                return new EventStore(new WindsorServiceLocator(container)).Initialize(this.handlerTypes);
 
-            return new EventStore(new WindsorServiceLocator(container)).Initialize(handlers.Select(x => x.GetType()));
+            return new EventStore(new WindsorServiceLocator(container)).Initialize(this.handlers.Select(x => x.GetType()));
         }
 
         private static void RegisterEventTypes(IWindsorContainer container, Type type, object instance = null)

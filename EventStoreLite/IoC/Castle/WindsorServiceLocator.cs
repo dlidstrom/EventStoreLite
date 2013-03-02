@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using Castle.Windsor;
 
-namespace EventStoreLite.IoC
+namespace EventStoreLite.IoC.Castle
 {
     internal class WindsorServiceLocator : IServiceLocator
     {
@@ -15,17 +15,17 @@ namespace EventStoreLite.IoC
 
         public object Resolve(Type type)
         {
-            return container.Resolve(type);
+            return this.container.Resolve(type);
         }
 
         public Array ResolveAll(Type type)
         {
-            return container.ResolveAll(type);
+            return this.container.ResolveAll(type);
         }
 
         public void Release(object o)
         {
-            container.Release(o);
+            this.container.Release(o);
         }
     }
 }

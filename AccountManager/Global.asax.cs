@@ -7,7 +7,7 @@ using AccountManager.App_Start;
 using Castle.MicroKernel.Registration;
 using Castle.Windsor;
 using EventStoreLite;
-using EventStoreLite.IoC;
+using EventStoreLite.IoC.Castle;
 using Raven.Client;
 using Raven.Client.Document;
 
