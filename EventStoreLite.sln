@@ -20,6 +20,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccountManager", "AccountMa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccountManager.Test", "AccountManager.Test\AccountManager.Test.csproj", "{3A9677C6-8E86-48BA-BD7D-4BB9146D484A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{93A8E238-5C7F-404E-8D7D-022111F9BA45}"
+	ProjectSection(SolutionItems) = preProject
+		EventStoreLite.nuspec = EventStoreLite.nuspec
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
