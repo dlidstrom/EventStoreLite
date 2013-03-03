@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStoreLite.Indexes;
 using EventStoreLite.IoC;
@@ -67,14 +68,14 @@ namespace EventStoreLite
             var documentStore = (IDocumentStore)this.container.Resolve(typeof(IDocumentStore));
 
             // wait for indexing to complete
-            var indexingTask = Task.Run(
+            var indexingTask = Task.Factory.StartNew(
                 () =>
                     {
                         while (true)
                         {
                             var s = documentStore.DatabaseCommands.GetStatistics().StaleIndexes;
                             if (!s.Contains("ReadModelIndex")) break;
-                            Task.Delay(500).Wait();
+                            Thread.Sleep(500);
                         }
                     });
             indexingTask.Wait(15000);
