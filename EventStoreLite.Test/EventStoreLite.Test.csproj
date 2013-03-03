@@ -83,6 +83,8 @@
     <Compile Include="AggregateChanged.cs" />
     <Compile Include="AggregateCreated.cs" />
     <Compile Include="AggregateHandler.cs" />
+    <Compile Include="AnotherAggregateHandler.cs" />
+    <Compile Include="CastleInstallerTest.cs" />
     <Compile Include="ConflictDetectionTest.cs" />
     <Compile Include="CustomerInitializedHandler.cs" />
     <Compile Include="CustomerViewModel.cs" />
@@ -94,6 +96,7 @@
     <Compile Include="Handler.cs" />
     <Compile Include="InstallerTest.cs" />
     <Compile Include="TestBase.cs" />
+    <Compile Include="UnityInstallerTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

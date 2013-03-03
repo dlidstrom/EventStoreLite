@@ -96,13 +96,16 @@ namespace EventStoreLite.IoC.Unity
                 var genericTypeDefinition = i.GetGenericTypeDefinition();
                 if (!typeof(IEventHandler<>).IsAssignableFrom(genericTypeDefinition)) continue;
 
+                var genericArguments = string.Join(
+                    ", ", i.GetGenericArguments().Select(x => x.ToString()));
+                var name = string.Format("{0}<{1}>", type.FullName, genericArguments);
                 if (instance != null)
                 {
-                    container.RegisterInstance(i, instance);
+                    container.RegisterInstance(i, name, instance);
                 }
                 else
                 {
-                    container.RegisterType(i, type, new TransientLifetimeManager());
+                    container.RegisterType(i, type, name, new TransientLifetimeManager());
                 }
             }
         }

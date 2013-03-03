@@ -50,6 +50,7 @@ namespace EventStoreLite
         /// <param name="documentStore">Document store.</param>
         /// <param name="session">Document session.</param>
         /// <returns>Event store session.</returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public IEventStoreSession OpenSession(IDocumentStore documentStore, IDocumentSession session)
         {
             if (documentStore == null) throw new ArgumentNullException("documentStore");
