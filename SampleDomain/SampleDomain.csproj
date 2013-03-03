@@ -58,15 +58,14 @@
     <Compile Include="ViewModels\NamesViewModel.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\EventStoreLite\EventStoreLite.csproj">
-      <Project>{FBEEE02A-C68B-48AA-8D62-D275FD010E61}</Project>
+      <Project>{fbeee02a-c68b-48aa-8d62-d275fd010e61}</Project>
       <Name>EventStoreLite</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

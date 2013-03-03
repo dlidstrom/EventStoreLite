@@ -29,11 +29,15 @@ namespace AccountManager
                 Component.For<IDocumentStore>()
                          .UsingFactoryMethod(
                              k =>
-                             new DocumentStore
-                             {
-                                 Url = "http://localhost:8082",
-                                 DefaultDatabase = "EventStoreLite"
-                             }.Initialize())
+                                 {
+                                     var store = new DocumentStore
+                                         {
+                                             Url = "http://localhost:8082",
+                                             DefaultDatabase = "EventStoreLite"
+                                         }.Initialize();
+                                     store.Conventions.IdentityPartsSeparator = "-";
+                                     return store;
+                                 })
                          .LifestyleSingleton();
 
             // registers the document session, per web request lifestyle

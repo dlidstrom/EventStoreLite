@@ -54,16 +54,24 @@ namespace EventStoreLite
         {
             if (aggregate == null) throw new ArgumentNullException("aggregate");
 
-            var typeTagName = documentStore.Conventions.GetTypeTagName(aggregate.GetType());
-            var hilo = new HiLoKeyGenerator("EventStreams", 4);
             var eventStream = new EventStream();
-            var id = hilo.GenerateDocumentKey(documentStore.DatabaseCommands, documentStore.Conventions, eventStream);
-            eventStream.Id = string.Format("EventStreams/{0}/{1}", typeTagName, id.Substring(id.LastIndexOf('/') + 1));
+            this.GenerateId(eventStream, aggregate);
             this.documentSession.Store(eventStream);
             aggregate.SetId(eventStream.Id);
             var eventStreamAndAggregateRoot = new EventStreamAndAggregateRoot(eventStream, aggregate);
             this.unitOfWork.Add(eventStreamAndAggregateRoot);
             this.entitiesByKey.Add(eventStream.Id, eventStreamAndAggregateRoot);
+        }
+
+        private void GenerateId(EventStream eventStream, AggregateRoot aggregate)
+        {
+            var typeTagName = documentStore.Conventions.GetTypeTagName(aggregate.GetType());
+            var hilo = new HiLoKeyGenerator("EventStreams", 4);
+            var id = hilo.GenerateDocumentKey(this.documentStore.DatabaseCommands, this.documentStore.Conventions, eventStream);
+            var identityPartsSeparator = this.documentStore.Conventions.IdentityPartsSeparator;
+            var lastIndexOf = id.LastIndexOf(identityPartsSeparator, StringComparison.Ordinal);
+            eventStream.Id = string.Format(
+                "EventStreams{2}{0}{2}{1}", typeTagName, id.Substring(lastIndexOf + 1), identityPartsSeparator);
         }
 
         public void SaveChanges()
