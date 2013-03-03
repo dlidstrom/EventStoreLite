@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
     <metadata>
         <id>EventStoreLite</id>
-        <version>0.4</version>
+        <version>0.4.1</version>
         <title />
         <authors>Daniel Lidstrom</authors>
         <owners />
@@ -12,6 +12,11 @@
         <description>Event store that uses RavenDB for storing write models and read models. Contains an event dispatcher and base classes for creating aggregate roots and events and event listeners. The event store keeps track of write models and read models and can rebuild read models if desired.</description>
         <summary />
         <releaseNotes>
+0.4.1
+Bug fixes:
+* Respect RavenDB identity parts separator convention.
+
+0.4
 Bug fixes:
 * Loading an instance that is already loaded will return the same instance.
 
