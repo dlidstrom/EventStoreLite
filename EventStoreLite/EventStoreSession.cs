@@ -35,7 +35,7 @@ namespace EventStoreLite
 
             EventStreamAndAggregateRoot unitOfWorkInstance;
             if (entitiesByKey.TryGetValue(id, out unitOfWorkInstance))
-                return unitOfWorkInstance.AggregateRoot as TAggregate;
+                return (TAggregate)unitOfWorkInstance.AggregateRoot;
             var stream = this.documentSession.Load<EventStream>(id);
             if (stream != null)
             {
