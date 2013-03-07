@@ -83,6 +83,7 @@
     <Compile Include="AggregateChanged.cs" />
     <Compile Include="AggregateCreated.cs" />
     <Compile Include="AggregateHandler.cs" />
+    <Compile Include="AggregateHistory.cs" />
     <Compile Include="AnotherAggregateHandler.cs" />
     <Compile Include="CastleInstallerTest.cs" />
     <Compile Include="ConflictDetectionTest.cs" />
@@ -92,6 +93,7 @@
     <Compile Include="EventStoreSession_Separator.cs" />
     <Compile Include="EventStore_Load.cs" />
     <Compile Include="EventStore_LoadToAnotherAggregateRootClass.cs" />
+    <Compile Include="EventStore_MigrateEvents.cs" />
     <Compile Include="EventStore_RebuildReadModels.cs" />
     <Compile Include="EventStore_Store.cs" />
     <Compile Include="Handler.cs" />

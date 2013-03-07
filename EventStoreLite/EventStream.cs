@@ -11,6 +11,6 @@ namespace EventStoreLite
             this.History = new List<IDomainEvent>();
         }
 
-        public List<IDomainEvent> History { get; private set; }
+        public List<IDomainEvent> History { get; internal set; }
     }
 }

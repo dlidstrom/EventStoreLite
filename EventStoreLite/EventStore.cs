@@ -115,5 +115,63 @@ namespace EventStoreLite
                 }
             }
         }
+
+        /// <summary>
+        /// Migrates all store events.
+        /// </summary>
+        /// <param name="eventMigrators">Event migrators.</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        public void MigrateEvents(IEnumerable<IEventMigrator> eventMigrators)
+        {
+            if (eventMigrators == null) throw new ArgumentNullException("eventMigrators");
+
+            // order by defined date
+            eventMigrators = eventMigrators.OrderBy(x => x.DefinedOn()).ToList();
+
+            var current = 0;
+            while (true)
+            {
+                var session = (IDocumentSession)this.container.Resolve(typeof(IDocumentSession));
+                try
+                {
+                    // allow indexing to take its time
+                    var q =
+                        session.Query<EventStream>()
+                               .Customize(x => x.WaitForNonStaleResultsAsOf(DateTime.Now.AddSeconds(15)));
+
+                    var eventStreams = q.Skip(current).Take(128).ToList();
+                    if (eventStreams.Count == 0) break;
+                    foreach (var eventStream in eventStreams)
+                    {
+                        var newHistory = new List<IDomainEvent>();
+                        foreach (var domainEvent in eventStream.History)
+                        {
+                            var oldEvents = new List<IDomainEvent> { domainEvent };
+                            foreach (var eventMigrator in eventMigrators)
+                            {
+                                var newEvents = new List<IDomainEvent>();
+                                foreach (var migratedEvent in oldEvents)
+                                {
+                                    newEvents.AddRange(eventMigrator.Migrate(migratedEvent, eventStream.Id));
+                                }
+
+                                oldEvents = newEvents;
+                            }
+
+                            newHistory.AddRange(oldEvents);
+                        }
+
+                        eventStream.History = newHistory;
+                    }
+
+                    session.SaveChanges();
+                    current += eventStreams.Count;
+                }
+                finally
+                {
+                    this.container.Release(session);
+                }
+            }
+        }
     }
 }
