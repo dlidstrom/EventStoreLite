@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.Serialization;
 using EventStoreLite.Infrastructure;
 using Raven.Client;
@@ -39,7 +40,19 @@ namespace EventStoreLite
             var stream = this.documentSession.Load<EventStream>(id);
             if (stream != null)
             {
-                var instance = (TAggregate)FormatterServices.GetUninitializedObject(typeof(TAggregate));
+                TAggregate instance;
+
+                // attempt to call default constructor
+                // if none found, create uninitialized object
+                var ctor =
+                    typeof(TAggregate).GetConstructor(
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                        null,
+                        Type.EmptyTypes,
+                        null);
+                if (ctor != null) instance = (TAggregate)ctor.Invoke(null);
+                else instance = (TAggregate)FormatterServices.GetUninitializedObject(typeof(TAggregate));
+
                 instance.LoadFromHistory(stream.History);
                 var eventStreamAndAggregateRoot = new EventStreamAndAggregateRoot(stream, instance);
                 this.unitOfWork.Add(eventStreamAndAggregateRoot);
