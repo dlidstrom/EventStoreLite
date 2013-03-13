@@ -4,6 +4,8 @@ using System.Web;
 using System.Web.Mvc;
 using AccountManager.Models;
 using AccountManager.ReadModels;
+using EventStoreLite;
+using EventStoreLite.IoC.Castle;
 
 namespace AccountManager.Controllers
 {
@@ -57,15 +59,16 @@ namespace AccountManager.Controllers
             return RedirectToAction("Index");
         }
 
-        public ActionResult RecreateReadModels()
+        public ActionResult ReplayEvents()
         {
             return this.View();
         }
 
-        [HttpPost, ActionName("RecreateReadModels")]
-        public ActionResult RecreateReadModelsConfirmed()
+        [HttpPost, ActionName("ReplayEvents")]
+        public ActionResult ReplayEventsConfirmed()
         {
-            EventStore.RebuildReadModels();
+            var windsorServiceLocator = new WindsorServiceLocator(MvcApplication.ChildContainer);
+            EventStore.ReplayEvents(windsorServiceLocator);
             return this.View();
         }
     }

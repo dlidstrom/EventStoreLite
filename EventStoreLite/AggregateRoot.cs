@@ -59,6 +59,7 @@ namespace EventStoreLite
         protected void ApplyChange(Event @event)
         {
             if (@event == null) throw new ArgumentNullException("event");
+            @event.SetTimeStamp(DateTimeOffset.Now);
             this.ApplyChange(@event, true);
         }
 

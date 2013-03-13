@@ -11,5 +11,10 @@ namespace EventStoreLite
         /// Gets the event time stamp.
         /// </summary>
         DateTimeOffset TimeStamp { get; }
+
+        /// <summary>
+        /// Gets the change sequence.
+        /// </summary>
+        int ChangeSequence { get; }
     }
 }

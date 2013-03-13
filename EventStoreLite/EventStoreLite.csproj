@@ -84,6 +84,7 @@
     <Compile Include="EventStreamAndAggregateRoot.cs" />
     <Compile Include="IEventMigrator.cs" />
     <Compile Include="IEventStoreSession.cs" />
+    <Compile Include="Indexes\EventsIndex.cs" />
     <Compile Include="IoC\Castle\EventStoreInstaller.cs" />
     <Compile Include="IoC\Castle\WindsorServiceLocator.cs" />
     <Compile Include="IoC\IServiceLocator.cs" />

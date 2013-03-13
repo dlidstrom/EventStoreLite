@@ -159,7 +159,7 @@
     <Content Include="Views\Shared\_Layout.cshtml" />
     <Content Include="Views\Home\Index.cshtml" />
     <Content Include="Views\Home\CreateAccount.cshtml" />
-    <Content Include="Views\Home\RecreateReadModels.cshtml" />
+    <Content Include="Views\Home\ReplayEvents.cshtml" />
     <Content Include="Views\Home\Accounts.cshtml" />
     <Content Include="Views\Home\AuditLog.cshtml" />
     <Content Include="Views\Home\ActivateAccount.cshtml" />

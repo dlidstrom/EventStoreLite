@@ -12,9 +12,19 @@ namespace EventStoreLite
         /// </summary>
         public DateTimeOffset TimeStamp { get; private set; }
 
+        /// <summary>
+        /// Gets the change sequence.
+        /// </summary>
+        public int ChangeSequence { get; private set; }
+
         internal void SetTimeStamp(DateTimeOffset dateTimeOffset)
         {
             TimeStamp = dateTimeOffset;
+        }
+
+        internal void SetChangeSequence(int changetSequence)
+        {
+            ChangeSequence = changetSequence;
         }
     }
 }

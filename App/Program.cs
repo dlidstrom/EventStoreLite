@@ -28,14 +28,21 @@ namespace App
         private static void Run()
         {
             using (var container = CreateContainer())
+            using (var childContainer = CreateChildContainer(container))
             {
-                WithEventStoreSession(container, CreateDomainObject);
+                WithEventStoreSession(container, x => { });
+                // rebuild read models
+                var windsorServiceLocator = new WindsorServiceLocator(childContainer);
+                WithEventStore(container, x => EventStore.ReplayEvents(windsorServiceLocator));
+
+                container.RemoveChildContainer(childContainer);
+                return;
 
                 // query the view model
                 WithSession(container, ShowNames);
 
                 // rebuild read models
-                WithEventStore(container, x => x.RebuildReadModels());
+                WithEventStore(container, x => EventStore.ReplayEvents(new WindsorServiceLocator(container.GetChildContainer("ReplayEvents"))));
 
                 // query the view model
                 WithSession(container, ShowNames);
@@ -94,16 +101,23 @@ namespace App
             }
         }
 
+        private static readonly Random random = new Random();
         private static void CreateDomainObject(IEventStoreSession session)
         {
-            var existingCustomer = session.Load<Customer>("EventStreams/Customers/5");
+            /*var existingCustomer = session.Load<Customer>("EventStreams/Customers/1");
             if (existingCustomer != null)
                 existingCustomer.PrintName(Console.Out);
-            else
+            else*/
             {
-                var customer = new Customer("Daniel Lidström");
-                customer.ChangeName("Per Daniel Lidström");
-                session.Store(customer);
+                var n = random.Next(10);
+                for (int i = 0; i < n; i++)
+                {
+                    var customer = new Customer("Daniel Lidström" + random.Next(5));
+                    customer.ChangeName("Per Daniel Lidström" + random.Next(20, 40));
+                    session.Store(customer);
+                    if (random.Next(3) > 1)
+                        session.SaveChanges();
+                }
             }
         }
 
@@ -119,11 +133,22 @@ namespace App
                          .UsingFactoryMethod(
                              kernel => kernel.Resolve<IDocumentStore>().OpenSession())
                          .LifestyleScoped();
-            container.Register(
-                documentStoreComponent,
-                sessionComponent);
+            container.Register(documentStoreComponent, sessionComponent);
             container.Install(
                 EventStoreInstaller.FromAssembly(typeof(CustomerInitialized).Assembly));
+            return container;
+        }
+
+        private static IWindsorContainer CreateChildContainer(IWindsorContainer parent)
+        {
+            var sessionComponent =
+                Component.For<IDocumentSession>()
+                         .UsingFactoryMethod(
+                             kernel => kernel.Resolve<IDocumentStore>().OpenSession())
+                         .LifestyleTransient();
+            var container = new WindsorContainer();
+            container.Register(sessionComponent);
+            parent.AddChildContainer(container);
             return container;
         }
 

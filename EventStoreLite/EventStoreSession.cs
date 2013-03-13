@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using EventStoreLite.Infrastructure;
@@ -18,6 +19,9 @@ namespace EventStoreLite
         private readonly IDocumentStore documentStore;
         private readonly IDocumentSession documentSession;
         private readonly EventDispatcher dispatcher;
+        private readonly HiLoKeyGenerator eventStreamsHiLoKeyGenerator = new HiLoKeyGenerator("EventStreams", 4);
+        private readonly HiLoKeyGenerator changeSequenceHiLoKeyGenerator = new HiLoKeyGenerator("ChangeSequence", 4);
+        private int currentChangeSequence;
 
         public EventStoreSession(IDocumentStore documentStore, IDocumentSession documentSession, EventDispatcher dispatcher)
         {
@@ -28,6 +32,7 @@ namespace EventStoreLite
             this.documentStore = documentStore;
             this.documentSession = documentSession;
             this.dispatcher = dispatcher;
+            this.currentChangeSequence = this.GenerateCommitSequence();
         }
 
         public TAggregate Load<TAggregate>(string id) where TAggregate : AggregateRoot
@@ -79,32 +84,53 @@ namespace EventStoreLite
         private void GenerateId(EventStream eventStream, AggregateRoot aggregate)
         {
             var typeTagName = documentStore.Conventions.GetTypeTagName(aggregate.GetType());
-            var hilo = new HiLoKeyGenerator("EventStreams", 4);
-            var id = hilo.GenerateDocumentKey(this.documentStore.DatabaseCommands, this.documentStore.Conventions, eventStream);
+            var id = this.eventStreamsHiLoKeyGenerator.GenerateDocumentKey(
+                this.documentStore.DatabaseCommands, this.documentStore.Conventions, eventStream);
             var identityPartsSeparator = this.documentStore.Conventions.IdentityPartsSeparator;
             var lastIndexOf = id.LastIndexOf(identityPartsSeparator, StringComparison.Ordinal);
             eventStream.Id = string.Format(
                 "EventStreams{2}{0}{2}{1}", typeTagName, id.Substring(lastIndexOf + 1), identityPartsSeparator);
         }
 
+        private int GenerateCommitSequence()
+        {
+            var id = this.changeSequenceHiLoKeyGenerator.GenerateDocumentKey(
+                this.documentStore.DatabaseCommands, this.documentStore.Conventions, null);
+            var identityPartsSeparator = this.documentStore.Conventions.IdentityPartsSeparator;
+            var lastIndexOf = id.LastIndexOf(identityPartsSeparator, StringComparison.Ordinal);
+            return int.Parse(id.Substring(lastIndexOf + 1));
+        }
+
         public void SaveChanges()
         {
-            foreach (var entry in this.unitOfWork)
+            var aggregatesAndEvents = from entry in this.unitOfWork
+                                      let aggregateRoot = entry.AggregateRoot
+                                      let eventStream = entry.EventStream
+                                      from @event in aggregateRoot.GetUncommittedChanges()
+                                      orderby @event.TimeStamp
+                                      select
+                                          new
+                                          {
+                                              EventStream = eventStream,
+                                              Event = @event
+                                          };
+            foreach (var aggregatesAndEvent in aggregatesAndEvents)
             {
-                var aggregateRoot = entry.AggregateRoot;
-                var eventStream = entry.EventStream;
-                foreach (var pendingEvent in aggregateRoot.GetUncommittedChanges())
-                {
-                    var asDynamic = pendingEvent.AsDynamic();
-                    asDynamic.SetTimeStamp(DateTimeOffset.Now);
-                    this.dispatcher.Dispatch(pendingEvent, eventStream.Id);
-                    eventStream.History.Add(pendingEvent);
-                }
+                var pendingEvent = aggregatesAndEvent.Event;
+                var eventStream = aggregatesAndEvent.EventStream;
+                var asDynamic = pendingEvent.AsDynamic();
+                asDynamic.SetChangeSequence(this.currentChangeSequence);
+                this.dispatcher.Dispatch(pendingEvent, eventStream.Id);
+                eventStream.History.Add(pendingEvent);
+            }
 
+            foreach (var aggregateRoot in unitOfWork.Select(x => x.AggregateRoot))
+            {
                 aggregateRoot.ClearUncommittedChanges();
             }
 
             this.documentSession.SaveChanges();
+            this.currentChangeSequence = this.GenerateCommitSequence();
         }
     }
 }
