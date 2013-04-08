@@ -5,6 +5,7 @@ using System.Reflection;
 using Castle.MicroKernel.Registration;
 using Castle.MicroKernel.SubSystems.Configuration;
 using Castle.Windsor;
+using Raven.Client;
 
 namespace EventStoreLite.IoC.Castle
 {
@@ -95,10 +96,16 @@ namespace EventStoreLite.IoC.Castle
 
         private EventStore CreateEventStore(IWindsorContainer container)
         {
+            var locator = new WindsorServiceLocator(container);
+            var documentStore = (IDocumentStore)locator.Resolve(typeof(IDocumentStore));
             if (this.handlerTypes != null)
-                return new EventStore(new WindsorServiceLocator(container)).Initialize(this.handlerTypes);
+            {
+                return new EventStore(locator).SetReadModelTypes(this.handlerTypes).Initialize(documentStore);
+            }
 
-            return new EventStore(new WindsorServiceLocator(container)).Initialize(this.handlers.Select(x => x.GetType()));
+            return
+                new EventStore(locator).SetReadModelTypes(this.handlers.Select(x => x.GetType()))
+                                       .Initialize(documentStore);
         }
 
         private static void RegisterEventTypes(IWindsorContainer container, Type type, object instance = null)

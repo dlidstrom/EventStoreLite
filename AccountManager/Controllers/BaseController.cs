@@ -6,6 +6,8 @@ namespace AccountManager.Controllers
 {
     public abstract class BaseController : Controller
     {
+        protected IDocumentStore DocumentStore { get; private set; }
+
         protected IDocumentSession DocumentSession { get; private set; }
 
         protected IEventStoreSession EventStoreSession { get; private set; }
@@ -14,6 +16,7 @@ namespace AccountManager.Controllers
 
         protected override void OnActionExecuting(ActionExecutingContext filterContext)
         {
+            this.DocumentStore = MvcApplication.Container.Resolve<IDocumentStore>();
             this.DocumentSession = MvcApplication.Container.Resolve<IDocumentSession>();
             this.EventStoreSession = MvcApplication.Container.Resolve<IEventStoreSession>();
             this.EventStore = MvcApplication.Container.Resolve<EventStore>();

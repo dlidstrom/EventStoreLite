@@ -18,8 +18,9 @@ namespace EventStoreLite
     public class EventStore
     {
         private static readonly object InitLock = new object();
+        private static bool initialized;
         private readonly IServiceLocator container;
-        private bool initialized;
+        private IEnumerable<Type> readModelTypes;
 
         internal EventStore(IServiceLocator container)
         {
@@ -27,22 +28,25 @@ namespace EventStoreLite
             this.container = container;
         }
 
-        internal EventStore Initialize(IEnumerable<Type> readModelTypes)
+        internal EventStore SetReadModelTypes(IEnumerable<Type> types)
         {
-            if (readModelTypes == null) throw new ArgumentNullException("readModelTypes");
+            if (types == null) throw new ArgumentNullException("types");
+            this.readModelTypes = types;
 
-            lock (InitLock)
-            {
-                if (!this.initialized)
-                {
-                    var documentStore = (IDocumentStore)this.container.Resolve(typeof(IDocumentStore));
-                    new ReadModelIndex(readModelTypes).Execute(documentStore);
-                    new EventsIndex().Execute(documentStore);
+            return this;
+        }
 
-                    this.initialized = true;
-                }
-            }
-
+        /// <summary>
+        /// Initialize the event store. This will create the necessary
+        /// indexes. This method can be called several times.
+        /// </summary>
+        /// <param name="documentStore">Document store.</param>
+        /// <returns>Event store instance.</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public EventStore Initialize(IDocumentStore documentStore)
+        {
+            if (documentStore == null) throw new ArgumentNullException("documentStore");
+            this.DoInitialize(documentStore);
             return this;
         }
 
@@ -53,8 +57,10 @@ namespace EventStoreLite
         /// <param name="session">Document session.</param>
         /// <returns>Event store session.</returns>
         /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
         public IEventStoreSession OpenSession(IDocumentStore documentStore, IDocumentSession session)
         {
+            if (!initialized) throw new InvalidOperationException("The event store must be initialized before first usage.");
             if (documentStore == null) throw new ArgumentNullException("documentStore");
             if (session == null) throw new ArgumentNullException("session");
 
@@ -66,6 +72,7 @@ namespace EventStoreLite
         /// </summary>
         public static void ReplayEvents(IServiceLocator locator)
         {
+            if (!initialized) throw new InvalidOperationException("The event store must be initialized before first usage.");
             IDocumentStore documentStore = null;
             try
             {
@@ -89,6 +96,7 @@ namespace EventStoreLite
         /// <exception cref="ArgumentNullException"></exception>
         public void MigrateEvents(IEnumerable<IEventMigrator> eventMigrators)
         {
+            if (!initialized) throw new InvalidOperationException("The event store must be initialized before first usage.");
             if (eventMigrators == null) throw new ArgumentNullException("eventMigrators");
 
             // order by defined date
@@ -210,6 +218,16 @@ namespace EventStoreLite
                     }
                 });
             indexingTask.Wait(15000);
+        }
+
+        private void DoInitialize(IDocumentStore documentStore)
+        {
+            lock (InitLock)
+            {
+                new ReadModelIndex(this.readModelTypes).Execute(documentStore);
+                new EventsIndex().Execute(documentStore);
+                initialized = true;
+            }
         }
     }
 }

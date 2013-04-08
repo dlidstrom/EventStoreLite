@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Practices.Unity;
+using Raven.Client;
 
 namespace EventStoreLite.IoC.Unity
 {
@@ -83,9 +84,18 @@ namespace EventStoreLite.IoC.Unity
         private EventStore CreateEventStore(IUnityContainer arg)
         {
             if (this.handlerTypes != null)
-                return new EventStore(new UnityServiceLocator(arg)).Initialize(this.handlerTypes);
+            {
+                var locator = new UnityServiceLocator(arg);
+                return
+                    new EventStore(locator).SetReadModelTypes(this.handlerTypes)
+                                           .Initialize((IDocumentStore)locator.Resolve(typeof(IDocumentStore)));
+            }
 
-            return new EventStore(new UnityServiceLocator(this.Container)).Initialize(this.handlers.Select(x => x.GetType()));
+            var serviceLocator = new UnityServiceLocator(this.Container);
+            return
+                new EventStore(serviceLocator).SetReadModelTypes(this.handlers.Select(x => x.GetType()))
+                                              .Initialize(
+                                                  (IDocumentStore)serviceLocator.Resolve(typeof(IDocumentStore)));
         }
 
         private static void RegisterEventTypes(IUnityContainer container, Type type, object instance = null)

@@ -1,0 +1,10 @@
+﻿@{
+    ViewBag.Title = "Administrera RavenDB";
+}
+
+<h3>@ViewBag.Title</h3>
+<form method="POST">
+    Är du säker på att du vill nollställa alla index? Det innebär
+    omräkning av <strong>alla</strong> index. Använd vid behov t.ex. efter uppgradering av RavenDB.
+    <input type="submit">Ja, utför</input>
+</form>

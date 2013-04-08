@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Linq;
+using System.Reflection;
 using System.Web;
 using System.Web.Mvc;
 using AccountManager.Models;
 using AccountManager.ReadModels;
 using EventStoreLite;
 using EventStoreLite.IoC.Castle;
+using Raven.Client.Indexes;
 
 namespace AccountManager.Controllers
 {
@@ -70,6 +72,31 @@ namespace AccountManager.Controllers
             var windsorServiceLocator = new WindsorServiceLocator(MvcApplication.ChildContainer);
             EventStore.ReplayEvents(windsorServiceLocator);
             return this.View();
+        }
+
+        public ActionResult ResetIndexes()
+        {
+            return this.View();
+        }
+
+        [HttpPost, ActionName("ResetIndexes")]
+        public ActionResult ResetIndexesConfirmed()
+        {
+            while (true)
+            {
+                var indexNames = DocumentStore.DatabaseCommands.GetIndexNames(0, 20);
+                if (indexNames.Length == 0) break;
+                foreach (var indexName in indexNames)
+                {
+                    DocumentStore.DatabaseCommands.DeleteIndex(indexName);
+                }
+            }
+
+            // create indexes
+            IndexCreation.CreateIndexes(Assembly.GetExecutingAssembly(), DocumentStore);
+            EventStore.Initialize(DocumentStore);
+
+            return this.RedirectToAction("Index");
         }
     }
 }
