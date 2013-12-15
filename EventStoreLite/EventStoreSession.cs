@@ -13,6 +13,7 @@ namespace EventStoreLite
     {
         private readonly Dictionary<string, EventStreamAndAggregateRoot> entitiesByKey =
             new Dictionary<string, EventStreamAndAggregateRoot>();
+
         private readonly HashSet<EventStreamAndAggregateRoot> unitOfWork
             = new HashSet<EventStreamAndAggregateRoot>(ObjectReferenceEqualityComparer<object>.Default);
 
@@ -21,7 +22,6 @@ namespace EventStoreLite
         private readonly EventDispatcher dispatcher;
         private readonly HiLoKeyGenerator eventStreamsHiLoKeyGenerator = new HiLoKeyGenerator("EventStreams", 4);
         private readonly HiLoKeyGenerator changeSequenceHiLoKeyGenerator = new HiLoKeyGenerator("ChangeSequence", 4);
-        private int currentChangeSequence;
 
         public EventStoreSession(IDocumentStore documentStore, IDocumentSession documentSession, EventDispatcher dispatcher)
         {
@@ -32,7 +32,6 @@ namespace EventStoreLite
             this.documentStore = documentStore;
             this.documentSession = documentSession;
             this.dispatcher = dispatcher;
-            this.currentChangeSequence = this.GenerateCommitSequence();
         }
 
         public TAggregate Load<TAggregate>(string id) where TAggregate : AggregateRoot
@@ -42,7 +41,7 @@ namespace EventStoreLite
             EventStreamAndAggregateRoot unitOfWorkInstance;
             if (entitiesByKey.TryGetValue(id, out unitOfWorkInstance))
                 return (TAggregate)unitOfWorkInstance.AggregateRoot;
-            var stream = this.documentSession.Load<EventStream>(id);
+            var stream = documentSession.Load<EventStream>(id);
             if (stream != null)
             {
                 TAggregate instance;
@@ -60,8 +59,8 @@ namespace EventStoreLite
 
                 instance.LoadFromHistory(stream.History);
                 var eventStreamAndAggregateRoot = new EventStreamAndAggregateRoot(stream, instance);
-                this.unitOfWork.Add(eventStreamAndAggregateRoot);
-                this.entitiesByKey.Add(id, eventStreamAndAggregateRoot);
+                unitOfWork.Add(eventStreamAndAggregateRoot);
+                entitiesByKey.Add(id, eventStreamAndAggregateRoot);
                 return instance;
             }
 
@@ -73,37 +72,17 @@ namespace EventStoreLite
             if (aggregate == null) throw new ArgumentNullException("aggregate");
 
             var eventStream = new EventStream();
-            this.GenerateId(eventStream, aggregate);
-            this.documentSession.Store(eventStream);
+            GenerateId(eventStream, aggregate);
+            documentSession.Store(eventStream);
             aggregate.SetId(eventStream.Id);
             var eventStreamAndAggregateRoot = new EventStreamAndAggregateRoot(eventStream, aggregate);
-            this.unitOfWork.Add(eventStreamAndAggregateRoot);
-            this.entitiesByKey.Add(eventStream.Id, eventStreamAndAggregateRoot);
-        }
-
-        private void GenerateId(EventStream eventStream, AggregateRoot aggregate)
-        {
-            var typeTagName = documentStore.Conventions.GetTypeTagName(aggregate.GetType());
-            var id = this.eventStreamsHiLoKeyGenerator.GenerateDocumentKey(
-                this.documentStore.DatabaseCommands, this.documentStore.Conventions, eventStream);
-            var identityPartsSeparator = this.documentStore.Conventions.IdentityPartsSeparator;
-            var lastIndexOf = id.LastIndexOf(identityPartsSeparator, StringComparison.Ordinal);
-            eventStream.Id = string.Format(
-                "EventStreams{2}{0}{2}{1}", typeTagName, id.Substring(lastIndexOf + 1), identityPartsSeparator);
-        }
-
-        private int GenerateCommitSequence()
-        {
-            var id = this.changeSequenceHiLoKeyGenerator.GenerateDocumentKey(
-                this.documentStore.DatabaseCommands, this.documentStore.Conventions, null);
-            var identityPartsSeparator = this.documentStore.Conventions.IdentityPartsSeparator;
-            var lastIndexOf = id.LastIndexOf(identityPartsSeparator, StringComparison.Ordinal);
-            return int.Parse(id.Substring(lastIndexOf + 1));
+            unitOfWork.Add(eventStreamAndAggregateRoot);
+            entitiesByKey.Add(eventStream.Id, eventStreamAndAggregateRoot);
         }
 
         public void SaveChanges()
         {
-            var aggregatesAndEvents = from entry in this.unitOfWork
+            var aggregatesAndEvents = from entry in unitOfWork
                                       let aggregateRoot = entry.AggregateRoot
                                       let eventStream = entry.EventStream
                                       from @event in aggregateRoot.GetUncommittedChanges()
@@ -114,13 +93,14 @@ namespace EventStoreLite
                                               EventStream = eventStream,
                                               Event = @event
                                           };
+            var currentChangeSequence = GenerateChangeSequence();
             foreach (var aggregatesAndEvent in aggregatesAndEvents)
             {
                 var pendingEvent = aggregatesAndEvent.Event;
                 var eventStream = aggregatesAndEvent.EventStream;
                 var asDynamic = pendingEvent.AsDynamic();
-                asDynamic.SetChangeSequence(this.currentChangeSequence);
-                this.dispatcher.Dispatch(pendingEvent, eventStream.Id);
+                asDynamic.SetChangeSequence(currentChangeSequence);
+                dispatcher.Dispatch(pendingEvent, eventStream.Id);
                 eventStream.History.Add(pendingEvent);
             }
 
@@ -129,8 +109,27 @@ namespace EventStoreLite
                 aggregateRoot.ClearUncommittedChanges();
             }
 
-            this.documentSession.SaveChanges();
-            this.currentChangeSequence = this.GenerateCommitSequence();
+            documentSession.SaveChanges();
+        }
+
+        private void GenerateId(EventStream eventStream, AggregateRoot aggregate)
+        {
+            var typeTagName = documentStore.Conventions.GetTypeTagName(aggregate.GetType());
+            var id = eventStreamsHiLoKeyGenerator.GenerateDocumentKey(
+                documentStore.DatabaseCommands, documentStore.Conventions, eventStream);
+            var identityPartsSeparator = documentStore.Conventions.IdentityPartsSeparator;
+            var lastIndexOf = id.LastIndexOf(identityPartsSeparator, StringComparison.Ordinal);
+            eventStream.Id = string.Format(
+                "EventStreams{2}{0}{2}{1}", typeTagName, id.Substring(lastIndexOf + 1), identityPartsSeparator);
+        }
+
+        private int GenerateChangeSequence()
+        {
+            var id = changeSequenceHiLoKeyGenerator.GenerateDocumentKey(
+                documentStore.DatabaseCommands, documentStore.Conventions, null);
+            var identityPartsSeparator = documentStore.Conventions.IdentityPartsSeparator;
+            var lastIndexOf = id.LastIndexOf(identityPartsSeparator, StringComparison.Ordinal);
+            return int.Parse(id.Substring(lastIndexOf + 1));
         }
     }
 }
