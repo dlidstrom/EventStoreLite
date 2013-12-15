@@ -15,23 +15,23 @@ namespace AccountManager.Controllers
     {
         public ActionResult Index()
         {
-            return this.View(DocumentSession.Query<AccountReadModel>().ToList());
+            return View(DocumentSession.Query<AccountReadModel>().ToList());
         }
 
         public ActionResult AuditLog()
         {
-            return this.View(DocumentSession.Query<AuditLogReadModel>().ToList());
+            return View(DocumentSession.Query<AuditLogReadModel>().ToList());
         }
 
         [ChildActionOnly]
         public PartialViewResult Accounts()
         {
-            return this.PartialView(DocumentSession.Load<AccountStatsReadModel>(AccountStatsReadModel.DbIdentifier));
+            return PartialView(DocumentSession.Load<AccountStatsReadModel>(AccountStatsReadModel.DbIdentifier));
         }
 
         public ActionResult CreateAccount()
         {
-            return this.View();
+            return View();
         }
 
         [HttpPost]
@@ -47,7 +47,7 @@ namespace AccountManager.Controllers
             if (id == null) throw new ArgumentNullException("id");
             var accountReadModel = DocumentSession.Load<AccountReadModel>(id);
             if (accountReadModel == null) throw new HttpException(404, "Account not found");
-            return this.View(accountReadModel);
+            return View(accountReadModel);
         }
 
         [HttpPost]
@@ -63,7 +63,7 @@ namespace AccountManager.Controllers
 
         public ActionResult ReplayEvents()
         {
-            return this.View();
+            return View();
         }
 
         [HttpPost, ActionName("ReplayEvents")]
@@ -71,12 +71,12 @@ namespace AccountManager.Controllers
         {
             var windsorServiceLocator = new WindsorServiceLocator(MvcApplication.ChildContainer);
             EventStore.ReplayEvents(windsorServiceLocator);
-            return this.View();
+            return View();
         }
 
         public ActionResult ResetIndexes()
         {
-            return this.View();
+            return View();
         }
 
         [HttpPost, ActionName("ResetIndexes")]
@@ -96,7 +96,7 @@ namespace AccountManager.Controllers
             IndexCreation.CreateIndexes(Assembly.GetExecutingAssembly(), DocumentStore);
             EventStore.Initialize(DocumentStore);
 
-            return this.RedirectToAction("Index");
+            return RedirectToAction("Index");
         }
     }
 }

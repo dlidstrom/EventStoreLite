@@ -13,7 +13,7 @@ namespace EventStoreLite.Indexes
         public ReadModelIndex(IEnumerable<Type> types)
         {
             if (types == null) throw new ArgumentNullException("types");
-            this.AddMapForAllSub<IReadModel>(types, views => from view in views select new { view.Id });
+            AddMapForAllSub<IReadModel>(types, views => from view in views select new { view.Id });
         }
 
         private void AddMapForAllSub<TBase>(IEnumerable<Type> types,

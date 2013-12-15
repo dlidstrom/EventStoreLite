@@ -20,7 +20,7 @@ namespace EventStoreLite
         public void Dispatch(IDomainEvent e, string aggregateId)
         {
             var type = typeof(IEventHandler<>).MakeGenericType(e.GetType());
-            var handlers = this.container.ResolveAll(type);
+            var handlers = container.ResolveAll(type);
             foreach (var handler in handlers)
             {
                 handler.AsDynamic().Handle(e, aggregateId);

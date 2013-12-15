@@ -5,7 +5,6 @@ using Castle.Windsor;
 using EventStoreLite.IoC.Castle;
 using NUnit.Framework;
 using Raven.Client;
-using Raven.Client.Document;
 using Raven.Client.Embedded;
 
 namespace EventStoreLite.Test

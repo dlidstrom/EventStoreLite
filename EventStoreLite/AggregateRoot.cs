@@ -17,6 +17,17 @@ namespace EventStoreLite
         /// </summary>
         public string Id { get; private set; }
 
+        /// <summary>
+        /// Gets the uncommitted changes. These are events that
+        /// have been raised by the aggregate root but have not
+        /// yet been persisted to the event store.
+        /// </summary>
+        /// <returns>Uncommitted changes.</returns>
+        public IDomainEvent[] GetUncommittedChanges()
+        {
+            return uncommittedChanges.ToArray();
+        }
+
         internal void SetId(string id)
         {
             if (id == null) throw new ArgumentNullException("id");
@@ -27,18 +38,7 @@ namespace EventStoreLite
         {
             if (history == null) throw new ArgumentNullException("history");
             uncommittedChanges = new List<IDomainEvent>();
-            foreach (var domainEvent in history) this.ApplyChange(domainEvent, false);
-        }
-
-        /// <summary>
-        /// Gets the uncommitted changes. These are events that
-        /// have been raised by the aggregate root but have not
-        /// yet been persisted to the event store.
-        /// </summary>
-        /// <returns>Uncommitted changes.</returns>
-        public IDomainEvent[] GetUncommittedChanges()
-        {
-            return this.uncommittedChanges.ToArray();
+            foreach (var domainEvent in history) ApplyChange(domainEvent, false);
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace EventStoreLite
         /// </summary>
         internal void ClearUncommittedChanges()
         {
-            this.uncommittedChanges = new List<IDomainEvent>();
+            uncommittedChanges = new List<IDomainEvent>();
         }
 
         /// <summary>
@@ -60,14 +60,14 @@ namespace EventStoreLite
         {
             if (@event == null) throw new ArgumentNullException("event");
             @event.SetTimeStamp(DateTimeOffset.Now);
-            this.ApplyChange(@event, true);
+            ApplyChange(@event, true);
         }
 
         [DebuggerStepThrough]
         private void ApplyChange(IDomainEvent @event, bool isNew)
         {
             this.AsDynamic().Apply(@event);
-            if (isNew) this.uncommittedChanges.Add(@event);
+            if (isNew) uncommittedChanges.Add(@event);
         }
     }
 }

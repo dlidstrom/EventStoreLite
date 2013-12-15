@@ -14,7 +14,7 @@ namespace EventStoreLite.Test
 
         public void Handle(CustomerInitialized e, string aggregateId)
         {
-            this.Callback.Invoke();
+            Callback.Invoke();
         }
     }
 }

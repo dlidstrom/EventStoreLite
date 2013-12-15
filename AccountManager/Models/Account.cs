@@ -10,7 +10,7 @@ namespace AccountManager.Models
         public Account(string email)
         {
             if (email == null) throw new ArgumentNullException("email");
-            this.ApplyChange(new AccountCreated(email));
+            ApplyChange(new AccountCreated(email));
         }
 
         public bool ValidatePassword(string password)
@@ -27,7 +27,7 @@ namespace AccountManager.Models
 
         private void Apply(AccountCreated e)
         {
-            impl = new NotActivatedAccount(this.ApplyChange);
+            impl = new NotActivatedAccount(ApplyChange);
         }
 
         private void Apply(AccountActivated e)

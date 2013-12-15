@@ -16,16 +16,16 @@ namespace AccountManager.Controllers
 
         protected override void OnActionExecuting(ActionExecutingContext filterContext)
         {
-            this.DocumentStore = MvcApplication.Container.Resolve<IDocumentStore>();
-            this.DocumentSession = MvcApplication.Container.Resolve<IDocumentSession>();
-            this.EventStoreSession = MvcApplication.Container.Resolve<IEventStoreSession>();
-            this.EventStore = MvcApplication.Container.Resolve<EventStore>();
+            DocumentStore = MvcApplication.Container.Resolve<IDocumentStore>();
+            DocumentSession = MvcApplication.Container.Resolve<IDocumentSession>();
+            EventStoreSession = MvcApplication.Container.Resolve<IEventStoreSession>();
+            EventStore = MvcApplication.Container.Resolve<EventStore>();
         }
 
         protected override void OnActionExecuted(ActionExecutedContext filterContext)
         {
             if (filterContext.Exception == null)
-                this.EventStoreSession.SaveChanges();
+                EventStoreSession.SaveChanges();
         }
     }
 }

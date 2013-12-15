@@ -8,21 +8,21 @@ namespace EventStoreLite.Indexes
     {
         public EventsIndex()
         {
-            this.Map = streams => from stream in streams
-                                  from @event in stream.History
+            Map = streams => from stream in streams
+                             from @event in stream.History
+                             select new
+                                    {
+                                        @event.ChangeSequence,
+                                        Id = Enumerable.Repeat(new { stream.Id }, 1),
+                                    };
+
+            Reduce = sequences => from sequence in sequences
+                                  group sequence by sequence.ChangeSequence into g
                                   select new
                                          {
-                                             @event.ChangeSequence,
-                                             Id = Enumerable.Repeat(new { stream.Id }, 1),
+                                             ChangeSequence = g.Key,
+                                             Id = g.SelectMany(x => x.Id).Distinct()
                                          };
-
-            this.Reduce = sequences => from sequence in sequences
-                                       group sequence by sequence.ChangeSequence into g
-                                       select new
-                                              {
-                                                  ChangeSequence = g.Key,
-                                                  Id = g.SelectMany(x => x.Id).Distinct()
-                                              };
         }
 
         public class StreamId

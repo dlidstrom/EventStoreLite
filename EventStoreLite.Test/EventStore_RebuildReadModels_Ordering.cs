@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using EventStoreLite.IoC.Castle;
 using NUnit.Framework;
 using Raven.Client;
@@ -14,44 +13,13 @@ namespace EventStoreLite.Test
         IEventHandler<EventStore_RebuildReadModels_Ordering.AuthorAdded>,
         IEventHandler<EventStore_RebuildReadModels_Ordering.BookAdded>
     {
-        private List<string> changes = new List<string>(); 
-
-        public class AuthorCreated : Event { public string Name { get; set; } }
-        public class BookAdded : Event { public string BookId { get; set; } }
-
-        private class Author : AggregateRoot
-        {
-            public Author(string name)
-            {
-                this.ApplyChange(new AuthorCreated { Name = name });
-            }
-
-            public void AddBook(Book book)
-            {
-                this.ApplyChange(new BookAdded { BookId = book.Id });
-            }
-        }
-
-        public class BookCreated : Event { public string Title { get; set; } }
-        public class AuthorAdded : Event { public string AuthorId { get; set; } }
-        private class Book : AggregateRoot
-        {
-            public Book(string title)
-            {
-                this.ApplyChange(new BookCreated { Title = title });
-            }
-
-            public void AddAuthor(Author author)
-            {
-                this.ApplyChange(new AuthorAdded { AuthorId = author.Id });
-            }
-        }
+        private List<string> changes = new List<string>();
 
         [Test]
         public void RebuildingAppliesEventsAfterCommitSequence()
         {
             // Arrange
-            var container = CreateContainer(new [] { this });
+            var container = CreateContainer(new[] { this });
             var documentStore = container.Resolve<IDocumentStore>();
             var eventStore = container.Resolve<EventStore>();
 
@@ -99,6 +67,40 @@ namespace EventStoreLite.Test
         public void Handle(BookAdded e, string aggregateId)
         {
             changes.Add("BookAdded");
+        }
+
+        public class AuthorCreated : Event { public string Name { get; set; } }
+
+        public class BookAdded : Event { public string BookId { get; set; } }
+
+        public class BookCreated : Event { public string Title { get; set; } }
+
+        public class AuthorAdded : Event { public string AuthorId { get; set; } }
+
+        private class Author : AggregateRoot
+        {
+            public Author(string name)
+            {
+                ApplyChange(new AuthorCreated { Name = name });
+            }
+
+            public void AddBook(Book book)
+            {
+                ApplyChange(new BookAdded { BookId = book.Id });
+            }
+        }
+
+        private class Book : AggregateRoot
+        {
+            public Book(string title)
+            {
+                ApplyChange(new BookCreated { Title = title });
+            }
+
+            public void AddAuthor(Author author)
+            {
+                ApplyChange(new AuthorAdded { AuthorId = author.Id });
+            }
         }
     }
 }

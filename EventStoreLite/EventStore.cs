@@ -28,12 +28,23 @@ namespace EventStoreLite
             this.container = container;
         }
 
-        internal EventStore SetReadModelTypes(IEnumerable<Type> types)
+        /// <summary>
+        /// Rebuilds all read models. This is a potentially lengthy operation!
+        /// </summary>
+        public static void ReplayEvents(IServiceLocator locator)
         {
-            if (types == null) throw new ArgumentNullException("types");
-            this.readModelTypes = types;
-
-            return this;
+            if (!initialized) throw new InvalidOperationException("The event store must be initialized before first usage.");
+            IDocumentStore documentStore = null;
+            try
+            {
+                documentStore = (IDocumentStore)locator.Resolve(typeof(IDocumentStore));
+                DoReplayEvents(locator, documentStore);
+            }
+            finally
+            {
+                if (documentStore != null)
+                    locator.Release(documentStore);
+            }
         }
 
         /// <summary>
@@ -46,7 +57,7 @@ namespace EventStoreLite
         public EventStore Initialize(IDocumentStore documentStore)
         {
             if (documentStore == null) throw new ArgumentNullException("documentStore");
-            this.DoInitialize(documentStore);
+            DoInitialize(documentStore);
             return this;
         }
 
@@ -64,26 +75,7 @@ namespace EventStoreLite
             if (documentStore == null) throw new ArgumentNullException("documentStore");
             if (session == null) throw new ArgumentNullException("session");
 
-            return new EventStoreSession(documentStore, session, new EventDispatcher(this.container));
-        }
-
-        /// <summary>
-        /// Rebuilds all read models. This is a potentially lengthy operation!
-        /// </summary>
-        public static void ReplayEvents(IServiceLocator locator)
-        {
-            if (!initialized) throw new InvalidOperationException("The event store must be initialized before first usage.");
-            IDocumentStore documentStore = null;
-            try
-            {
-                documentStore = (IDocumentStore)locator.Resolve(typeof(IDocumentStore));
-                DoReplayEvents(locator, documentStore);
-            }
-            finally
-            {
-                if (documentStore != null)
-                   locator.Release(documentStore);
-            }
+            return new EventStoreSession(documentStore, session, new EventDispatcher(container));
         }
 
         /// <summary>
@@ -105,7 +97,7 @@ namespace EventStoreLite
             var current = 0;
             while (true)
             {
-                var session = (IDocumentSession)this.container.Resolve(typeof(IDocumentSession));
+                var session = (IDocumentSession)container.Resolve(typeof(IDocumentSession));
                 try
                 {
                     // allow indexing to take its time
@@ -143,9 +135,17 @@ namespace EventStoreLite
                 }
                 finally
                 {
-                    this.container.Release(session);
+                    container.Release(session);
                 }
             }
+        }
+
+        internal EventStore SetReadModelTypes(IEnumerable<Type> types)
+        {
+            if (types == null) throw new ArgumentNullException("types");
+            readModelTypes = types;
+
+            return this;
         }
 
         private static void DoReplayEvents(IServiceLocator locator, IDocumentStore documentStore)
@@ -224,7 +224,7 @@ namespace EventStoreLite
         {
             lock (InitLock)
             {
-                new ReadModelIndex(this.readModelTypes).Execute(documentStore);
+                new ReadModelIndex(readModelTypes).Execute(documentStore);
                 new EventsIndex().Execute(documentStore);
                 initialized = true;
             }

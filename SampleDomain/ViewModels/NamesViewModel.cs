@@ -9,8 +9,8 @@ namespace SampleDomain.ViewModels
 
         public NamesViewModel()
         {
-            this.Id = DatabaseId;
-            this.Names = new List<string>();
+            Id = DatabaseId;
+            Names = new List<string>();
         }
 
         public List<string> Names { get; set; }

@@ -6,27 +6,6 @@ namespace EventStoreLite.Test
     [TestFixture]
     public class ConflictDetectionTest : TestBase
     {
-        public class Initialized : Event {}
-        public class FirstActionOccurred : Event{}
-        public class SecondActionOccurred : Event { }
-        public class Aggregate : AggregateRoot
-        {
-            public Aggregate()
-            {
-                this.ApplyChange(new Initialized());
-            }
-            public Aggregate FirstAction()
-            {
-                this.ApplyChange(new FirstActionOccurred());
-                return this;
-            }
-            public Aggregate SecondAction()
-            {
-                this.ApplyChange(new SecondActionOccurred());
-                return this;
-            }
-        }
-
         [Test, Ignore]
         public void MergesEvents()
         {
@@ -75,6 +54,32 @@ namespace EventStoreLite.Test
                 var eventStoreSession = eventStore.OpenSession(documentStore, documentSession);
                 var mergedAggregate = eventStoreSession.Load<Aggregate>(aggregate.Id);
                 // Assert.That(mergedAggregate.GetHistory().Length, Is.EqualTo(3));
+            }
+        }
+
+        public class Initialized : Event { }
+
+        public class FirstActionOccurred : Event { }
+
+        public class SecondActionOccurred : Event { }
+
+        public class Aggregate : AggregateRoot
+        {
+            public Aggregate()
+            {
+                ApplyChange(new Initialized());
+            }
+
+            public Aggregate FirstAction()
+            {
+                ApplyChange(new FirstActionOccurred());
+                return this;
+            }
+
+            public Aggregate SecondAction()
+            {
+                ApplyChange(new SecondActionOccurred());
+                return this;
             }
         }
     }

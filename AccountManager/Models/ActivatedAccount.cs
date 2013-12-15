@@ -1,5 +1,5 @@
-﻿using System.Globalization;
-using System;
+﻿using System;
+using System.Globalization;
 
 namespace AccountManager.Models
 {
@@ -10,13 +10,13 @@ namespace AccountManager.Models
 
         public ActivatedAccount(AccountActivated e)
         {
-            this.salt = e.Salt;
-            this.passwordHash = e.PasswordHash;
+            salt = e.Salt;
+            passwordHash = e.PasswordHash;
         }
 
         public bool ValidatePassword(string password)
         {
-            return string.Format("{0}/{1}", this.salt, password).GetHashCode().ToString(CultureInfo.InvariantCulture) == this.passwordHash;
+            return string.Format("{0}/{1}", salt, password).GetHashCode().ToString(CultureInfo.InvariantCulture) == passwordHash;
         }
 
         public void Activate(string password)

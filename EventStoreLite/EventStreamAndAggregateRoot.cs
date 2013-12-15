@@ -4,8 +4,8 @@ namespace EventStoreLite
     {
         public EventStreamAndAggregateRoot(EventStream eventStream, AggregateRoot aggregateRoot)
         {
-            this.EventStream = eventStream;
-            this.AggregateRoot = aggregateRoot;
+            EventStream = eventStream;
+            AggregateRoot = aggregateRoot;
         }
 
         public EventStream EventStream { get; private set; }

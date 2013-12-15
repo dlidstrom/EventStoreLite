@@ -31,11 +31,11 @@ namespace EventStoreLite.IoC.Unity
         {
             try
             {
-                return this.unityContainer.Resolve(type);
+                return unityContainer.Resolve(type);
             }
             catch (ResolutionFailedException)
             {
-                var instances = this.unityContainer.ResolveAll(type).ToArray();
+                var instances = unityContainer.ResolveAll(type).ToArray();
                 if (instances.Length == 1) return instances[0];
                 throw;
             }
@@ -48,7 +48,7 @@ namespace EventStoreLite.IoC.Unity
         /// <returns>Components.</returns>
         public Array ResolveAll(Type type)
         {
-            return this.unityContainer.ResolveAll(type).ToArray();
+            return unityContainer.ResolveAll(type).ToArray();
         }
 
         /// <summary>

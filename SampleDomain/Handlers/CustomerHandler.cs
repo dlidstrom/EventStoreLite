@@ -19,11 +19,11 @@ namespace SampleDomain.Handlers
 
         public void Handle(CustomerInitialized e, string aggregateId)
         {
-            var vm = this.session.Load<NamesViewModel>(NamesViewModel.DatabaseId);
+            var vm = session.Load<NamesViewModel>(NamesViewModel.DatabaseId);
             if (vm == null)
             {
                 vm = new NamesViewModel();
-                this.session.Store(vm);
+                session.Store(vm);
             }
 
             vm.Names.Add(string.Format("New customer: {0}", e.Name));
@@ -31,11 +31,11 @@ namespace SampleDomain.Handlers
 
         public void Handle(CustomerNameChanged e, string aggregateId)
         {
-            var vm = this.session.Load<NamesViewModel>(NamesViewModel.DatabaseId);
+            var vm = session.Load<NamesViewModel>(NamesViewModel.DatabaseId);
             if (vm == null)
             {
                 vm = new NamesViewModel();
-                this.session.Store(vm);
+                session.Store(vm);
             }
 
             vm.Names.Add("Customer changed name to " + e.NewName);

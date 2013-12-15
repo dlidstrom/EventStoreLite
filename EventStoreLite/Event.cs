@@ -22,9 +22,9 @@ namespace EventStoreLite
             TimeStamp = dateTimeOffset;
         }
 
-        internal void SetChangeSequence(int changetSequence)
+        internal void SetChangeSequence(int changeSequence)
         {
-            ChangeSequence = changetSequence;
+            ChangeSequence = changeSequence;
         }
     }
 }

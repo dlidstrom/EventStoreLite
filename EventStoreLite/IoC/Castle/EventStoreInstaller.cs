@@ -17,6 +17,18 @@ namespace EventStoreLite.IoC.Castle
         private readonly IEnumerable<IEventHandler> handlers;
         private readonly IEnumerable<Type> handlerTypes;
 
+        private EventStoreInstaller(IEnumerable<Type> handlerTypes)
+        {
+            if (handlerTypes == null) throw new ArgumentNullException("handlerTypes");
+            this.handlerTypes = handlerTypes;
+        }
+
+        private EventStoreInstaller(IEnumerable<IEventHandler> handlers)
+        {
+            if (handlers == null) throw new ArgumentNullException("handlers");
+            this.handlers = handlers;
+        }
+
         /// <summary>
         /// Installs event handlers from the specified assembly.
         /// </summary>
@@ -53,18 +65,6 @@ namespace EventStoreLite.IoC.Castle
             return new EventStoreInstaller(handlers);
         }
 
-        private EventStoreInstaller(IEnumerable<Type> handlerTypes)
-        {
-            if (handlerTypes == null) throw new ArgumentNullException("handlerTypes");
-            this.handlerTypes = handlerTypes;
-        }
-
-        private EventStoreInstaller(IEnumerable<IEventHandler> handlers)
-        {
-            if (handlers == null) throw new ArgumentNullException("handlers");
-            this.handlers = handlers;
-        }
-
         /// <summary>
         /// Installs the event store and the handler types or instances to the specified container.
         /// </summary>
@@ -74,38 +74,24 @@ namespace EventStoreLite.IoC.Castle
         {
             container.Register(
                 Component.For<EventStore>()
-                         .UsingFactoryMethod<EventStore>(x => this.CreateEventStore(container))
+                         .UsingFactoryMethod<EventStore>(x => CreateEventStore(container))
                          .LifestyleSingleton());
 
-            if (this.handlerTypes != null)
+            if (handlerTypes != null)
             {
-                foreach (var type in this.handlerTypes.Where(x => x.IsClass && x.IsAbstract == false))
+                foreach (var type in handlerTypes.Where(x => x.IsClass && x.IsAbstract == false))
                 {
                     RegisterEventTypes(container, type);
                 }
             }
 
-            if (this.handlers != null)
+            if (handlers != null)
             {
-                foreach (var handler in this.handlers)
+                foreach (var handler in handlers)
                 {
                     RegisterEventTypes(container, handler.GetType(), handler);
                 }
             }
-        }
-
-        private EventStore CreateEventStore(IWindsorContainer container)
-        {
-            var locator = new WindsorServiceLocator(container);
-            var documentStore = (IDocumentStore)locator.Resolve(typeof(IDocumentStore));
-            if (this.handlerTypes != null)
-            {
-                return new EventStore(locator).SetReadModelTypes(this.handlerTypes).Initialize(documentStore);
-            }
-
-            return
-                new EventStore(locator).SetReadModelTypes(this.handlers.Select(x => x.GetType()))
-                                       .Initialize(documentStore);
         }
 
         private static void RegisterEventTypes(IWindsorContainer container, Type type, object instance = null)
@@ -128,6 +114,20 @@ namespace EventStoreLite.IoC.Castle
 
                 container.Register(registration);
             }
+        }
+
+        private EventStore CreateEventStore(IWindsorContainer container)
+        {
+            var locator = new WindsorServiceLocator(container);
+            var documentStore = (IDocumentStore)locator.Resolve(typeof(IDocumentStore));
+            if (handlerTypes != null)
+            {
+                return new EventStore(locator).SetReadModelTypes(handlerTypes).Initialize(documentStore);
+            }
+
+            return
+                new EventStore(locator).SetReadModelTypes(handlers.Select(x => x.GetType()))
+                                       .Initialize(documentStore);
         }
     }
 }

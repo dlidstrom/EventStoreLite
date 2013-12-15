@@ -4,17 +4,19 @@
     {
         public Aggregate()
         {
-            this.ApplyChange(new AggregateCreated());
-        }
-        public void Change()
-        {
-            this.ApplyChange(new AggregateChanged());
-        }
-        private void Apply(AggregateChanged e)
-        {
-            this.Changed = true;
+            ApplyChange(new AggregateCreated());
         }
 
         public bool Changed { get; private set; }
+
+        public void Change()
+        {
+            ApplyChange(new AggregateChanged());
+        }
+
+        private void Apply(AggregateChanged e)
+        {
+            Changed = true;
+        }
     }
 }

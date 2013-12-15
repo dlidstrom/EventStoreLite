@@ -7,8 +7,21 @@ namespace EventStoreLite.Infrastructure
 {
     internal class PrivateReflectionDynamicObject : DynamicObject
     {
-        private object RealObject { get; set; }
         private const BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+        private object RealObject { get; set; }
+
+        // Called when a method is called
+        [DebuggerStepThrough]
+        public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
+        {
+            result = InvokeMemberOnType(RealObject.GetType(), RealObject, binder.Name, args);
+
+            // Wrap the sub object if necessary. This allows nested anonymous objects to work.
+            result = WrapObjectIfNeeded(result);
+
+            return true;
+        }
 
         [DebuggerStepThrough]
         internal static object WrapObjectIfNeeded(object o)
@@ -18,18 +31,6 @@ namespace EventStoreLite.Infrastructure
                 return o;
 
             return new PrivateReflectionDynamicObject { RealObject = o };
-        }
-
-        // Called when a method is called
-        [DebuggerStepThrough]
-        public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
-        {
-            result = InvokeMemberOnType(this.RealObject.GetType(), this.RealObject, binder.Name, args);
-
-            // Wrap the sub object if necessary. This allows nested anonymous objects to work.
-            result = WrapObjectIfNeeded(result);
-
-            return true;
         }
 
         [DebuggerStepThrough]

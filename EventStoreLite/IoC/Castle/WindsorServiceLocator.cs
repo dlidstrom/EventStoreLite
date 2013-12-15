@@ -28,7 +28,7 @@ namespace EventStoreLite.IoC.Castle
         /// <returns>Service instance.</returns>
         public object Resolve(Type type)
         {
-            return this.container.Resolve(type);
+            return container.Resolve(type);
         }
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace EventStoreLite.IoC.Castle
         /// <returns>Components.</returns>
         public Array ResolveAll(Type type)
         {
-            return this.container.ResolveAll(type);
+            return container.ResolveAll(type);
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace EventStoreLite.IoC.Castle
         /// <param name="o">Component instance.</param>
         public void Release(object o)
         {
-            this.container.Release(o);
+            container.Release(o);
         }
     }
 }

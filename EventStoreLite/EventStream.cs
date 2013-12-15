@@ -6,7 +6,7 @@ namespace EventStoreLite
     {
         public EventStream()
         {
-            this.History = new List<IDomainEvent>();
+            History = new List<IDomainEvent>();
         }
 
         public string Id { get; set; }

@@ -63,39 +63,22 @@ namespace EventStoreLite.IoC.Unity
 
         protected override void Initialize()
         {
-            this.Container.RegisterType<EventStore>(new InjectionFactory(this.CreateEventStore));
-            if (this.handlerTypes != null)
+            Container.RegisterType<EventStore>(new InjectionFactory(CreateEventStore));
+            if (handlerTypes != null)
             {
-                foreach (var type in this.handlerTypes.Where(x => x.IsClass && x.IsAbstract == false))
+                foreach (var type in handlerTypes.Where(x => x.IsClass && x.IsAbstract == false))
                 {
-                    RegisterEventTypes(this.Container, type);
+                    RegisterEventTypes(Container, type);
                 }
             }
 
-            if (this.handlers != null)
+            if (handlers != null)
             {
-                foreach (var handler in this.handlers)
+                foreach (var handler in handlers)
                 {
-                    RegisterEventTypes(this.Container, handler.GetType(), handler);
+                    RegisterEventTypes(Container, handler.GetType(), handler);
                 }
             }
-        }
-
-        private EventStore CreateEventStore(IUnityContainer arg)
-        {
-            if (this.handlerTypes != null)
-            {
-                var locator = new UnityServiceLocator(arg);
-                return
-                    new EventStore(locator).SetReadModelTypes(this.handlerTypes)
-                                           .Initialize((IDocumentStore)locator.Resolve(typeof(IDocumentStore)));
-            }
-
-            var serviceLocator = new UnityServiceLocator(this.Container);
-            return
-                new EventStore(serviceLocator).SetReadModelTypes(this.handlers.Select(x => x.GetType()))
-                                              .Initialize(
-                                                  (IDocumentStore)serviceLocator.Resolve(typeof(IDocumentStore)));
         }
 
         private static void RegisterEventTypes(IUnityContainer container, Type type, object instance = null)
@@ -118,6 +101,23 @@ namespace EventStoreLite.IoC.Unity
                     container.RegisterType(i, type, name, new TransientLifetimeManager());
                 }
             }
+        }
+
+        private EventStore CreateEventStore(IUnityContainer arg)
+        {
+            if (handlerTypes != null)
+            {
+                var locator = new UnityServiceLocator(arg);
+                return
+                    new EventStore(locator).SetReadModelTypes(handlerTypes)
+                                           .Initialize((IDocumentStore)locator.Resolve(typeof(IDocumentStore)));
+            }
+
+            var serviceLocator = new UnityServiceLocator(Container);
+            return
+                new EventStore(serviceLocator).SetReadModelTypes(handlers.Select(x => x.GetType()))
+                                              .Initialize(
+                                                  (IDocumentStore)serviceLocator.Resolve(typeof(IDocumentStore)));
         }
     }
 }

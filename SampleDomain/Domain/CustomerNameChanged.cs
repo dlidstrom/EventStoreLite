@@ -6,8 +6,8 @@ namespace SampleDomain.Domain
     {
         public CustomerNameChanged(string oldName, string newName)
         {
-            this.OldName = oldName;
-            this.NewName = newName;
+            OldName = oldName;
+            NewName = newName;
         }
 
         public string OldName { get; set; }

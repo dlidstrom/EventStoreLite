@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using System;
+﻿using System;
 using EventStoreLite;
 
 namespace AccountManager.Models
@@ -8,8 +7,8 @@ namespace AccountManager.Models
     {
         public AccountActivated(Guid salt, string passwordHash)
         {
-            this.Salt = salt;
-            this.PasswordHash = passwordHash;
+            Salt = salt;
+            PasswordHash = passwordHash;
         }
 
         public Guid Salt { get; set; }

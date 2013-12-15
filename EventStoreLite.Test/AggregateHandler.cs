@@ -6,7 +6,7 @@
 
         public void Handle(AggregateChanged e, string aggregateId)
         {
-            this.Changes++;
+            Changes++;
         }
     }
 }
