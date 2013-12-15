@@ -93,13 +93,13 @@ namespace EventStoreLite
                                               EventStream = eventStream,
                                               Event = @event
                                           };
-            var currentChangeSequence = GenerateChangeSequence();
+            var currentChangeSequence = new Lazy<int>(GenerateChangeSequence);
             foreach (var aggregatesAndEvent in aggregatesAndEvents)
             {
                 var pendingEvent = aggregatesAndEvent.Event;
                 var eventStream = aggregatesAndEvent.EventStream;
                 var asDynamic = pendingEvent.AsDynamic();
-                asDynamic.SetChangeSequence(currentChangeSequence);
+                asDynamic.SetChangeSequence(currentChangeSequence.Value);
                 dispatcher.Dispatch(pendingEvent, eventStream.Id);
                 eventStream.History.Add(pendingEvent);
             }
