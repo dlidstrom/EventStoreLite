@@ -174,7 +174,7 @@ namespace EventStoreLite
                                .OrderBy(x => x.ChangeSequence);
                     var results = eventsQuery.Skip(current).Take(128).ToList();
                     if (results.Count == 0) break;
-                    foreach (var result in eventsQuery)
+                    foreach (var result in results)
                     {
                         var changeSequence = result.ChangeSequence;
                         var ids = result.Id.Select(x => x.Id);
